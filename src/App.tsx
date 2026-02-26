@@ -3,7 +3,7 @@ function App() {
 
   return (
     <div>
-     <p>Thought Catalogue</p>
+     <p className="text-red-500">Thought Catalogue</p>
     </div>
   )
 }
