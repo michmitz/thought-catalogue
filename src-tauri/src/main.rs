@@ -47,12 +47,45 @@ fn get_saved_folder(app: tauri::AppHandle) -> Option<String> {
     None
 }
 
+#[derive(Serialize)]
+struct Entry {
+    name: String,
+    is_dir: bool,
+}
+
+#[tauri::command]
+fn read_folder(base: String, child: Option<String>) -> Result<Vec<Entry>, String> {
+    let mut path = PathBuf::from(base);
+
+    if let Some(folder) = child {
+        path.push(folder);
+    }
+
+    let entries = std::fs::read_dir(&path)
+        .map_err(|e| e.to_string())?;
+
+    let mut items = Vec::new();
+
+    for entry in entries {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let metadata = entry.metadata().map_err(|e| e.to_string())?;
+
+        items.push(Entry {
+            name: entry.file_name().to_string_lossy().to_string(),
+            is_dir: metadata.is_dir(),
+        });
+    }
+
+    Ok(items)
+}
+
 fn main() {
     tauri::Builder::default()
     .plugin(tauri_plugin_dialog::init()) 
         .invoke_handler(tauri::generate_handler![
             choose_folder,
-            get_saved_folder
+            get_saved_folder,
+            read_folder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

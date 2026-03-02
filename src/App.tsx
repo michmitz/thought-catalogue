@@ -4,8 +4,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 
 type View = "root" | "folder";
+type Entry = {
+  name: string;
+  is_dir: boolean;
+};
 
-function Sidebar({ open }: { open: boolean }) {
+function Sidebar({
+  open,
+  files,
+  onOpenFolder,
+}: {
+  open: boolean;
+  files: Entry[];
+  onOpenFolder: (name: string) => void;
+}) {
   return (
     <motion.div
       animate={{ width: open ? 260 : 0 }}
@@ -13,8 +25,15 @@ function Sidebar({ open }: { open: boolean }) {
       className="overflow-hidden border-r border-neutral-200 bg-neutral-50"
     >
       <div className="p-6 space-y-2">
-        <div className="text-neutral-600">📁 Inspiration</div>
-        <div className="text-neutral-600">📁 Resume</div>
+        {files.map((file) => (
+          <div
+            key={file.name}
+            onClick={() => file.is_dir && onOpenFolder(file.name)}
+            className="text-neutral-600 cursor-pointer hover:text-neutral-900 transition"
+          >
+            {file.is_dir ? "📁" : "📝"} {file.name}
+          </div>
+        ))}
       </div>
     </motion.div>
   );
@@ -103,10 +122,12 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [view, setView] = useState<View>("root");
   const [direction, setDirection] = useState(1);
+  const [files, setFiles] = useState<Entry[]>([]);
+  const [currentPath, setCurrentPath] = useState<string | null>(null);
 
   useEffect(() => {
     async function init() {
-      const saved = await invoke<string | null>("get_saved_folder");
+      let saved = await invoke<string | null>("get_saved_folder");
 
       if (!saved) {
         const selected = await open({
@@ -116,12 +137,38 @@ export default function App() {
 
         if (typeof selected === "string") {
           await invoke("choose_folder", { path: selected });
+          saved = selected;
         }
+      }
+
+      if (saved) {
+        setCurrentPath(saved);
+
+        const contents = await invoke<Entry[]>("read_folder", {
+          base: saved,
+          child: null,
+        });
+
+        setFiles(contents);
       }
     }
 
     init();
   }, []);
+
+  async function openFolder(name: string) {
+    if (!currentPath) return;
+
+    const newPath = `${currentPath}/${name}`;
+
+    const contents = await invoke<Entry[]>("read_folder", {
+      base: currentPath,
+      child: name,
+    });
+
+    setCurrentPath(newPath);
+    setFiles(contents);
+  }
 
   const navigateForward = () => {
     setDirection(1);
@@ -138,7 +185,7 @@ export default function App() {
       <TopBar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar open={sidebarOpen} />
+        <Sidebar open={sidebarOpen} files={files} onOpenFolder={openFolder} />
 
         <div className="flex-1 relative overflow-hidden">
           <AnimatePresence mode="wait">
