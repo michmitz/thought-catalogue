@@ -3,7 +3,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { motion } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { MdNotes } from "react-icons/md";
-import { FaRegFolder } from "react-icons/fa";
+import { FaRegFolder, FaTrash } from "react-icons/fa";
 
 type Entry = {
   name: string;
@@ -96,6 +96,7 @@ function Sidebar({
   currentPath,
   onAddFolder,
   onAddNote,
+  onDeleteEntry,
 }: {
   open: boolean;
   files: Entry[];
@@ -105,6 +106,7 @@ function Sidebar({
   currentPath: string | null;
   onAddFolder: () => void;
   onAddNote: () => void;
+  onDeleteEntry: (entry: Entry) => void;
 }) {
   return (
     <motion.div
@@ -153,10 +155,29 @@ function Sidebar({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.15 }}
-            onClick={() => file.is_dir && onOpenFolder(file.name)}
-            className="text-neutral-600 cursor-pointer hover:text-neutral-900 transition flex items-center gap-2"
+            className="group flex items-center gap-2 rounded hover:bg-neutral-100/80"
           >
-            {file.is_dir ? <FaRegFolder /> : <MdNotes />} {file.name}
+            <div
+              onClick={() => file.is_dir && onOpenFolder(file.name)}
+              className={`flex-1 flex items-center gap-2 min-w-0 py-0.5 ${
+                file.is_dir ? "cursor-pointer" : "cursor-default"
+              } text-neutral-600 hover:text-neutral-900 transition`}
+            >
+              {file.is_dir ? <FaRegFolder /> : <MdNotes />}{" "}
+              <span className="truncate">{file.name}</span>
+            </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteEntry(file);
+              }}
+              className="opacity-0 group-hover:opacity-100 p-1 rounded text-neutral-400 hover:text-red-600 hover:bg-red-50 transition flex-shrink-0"
+              title={file.is_dir ? "Move folder to trash" : "Move note to trash"}
+              aria-label="Move to trash"
+            >
+              <FaTrash className="w-3.5 h-3.5" />
+            </button>
           </motion.div>
         ))}
       </div>
@@ -314,6 +335,17 @@ export default function App() {
     setPromptError(null);
   }
 
+  async function handleDeleteEntry(entry: Entry) {
+    const path = pathStack.length > 0 ? pathStack[pathStack.length - 1] : null;
+    if (!path) return;
+    try {
+      await invoke("move_to_trash", { base: path, name: entry.name });
+      await refreshFiles();
+    } catch (err) {
+      window.alert("Could not move to trash. " + (err as Error).message);
+    }
+  }
+
   const currentPath =
     pathStack.length > 0 ? pathStack[pathStack.length - 1] : null;
 
@@ -339,6 +371,7 @@ export default function App() {
           currentPath={currentPath}
           onAddFolder={handleAddFolder}
           onAddNote={handleAddNote}
+          onDeleteEntry={handleDeleteEntry}
         />
 
         <div className="flex-1 p-8 bg-white">

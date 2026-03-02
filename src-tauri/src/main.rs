@@ -97,6 +97,12 @@ fn create_note(base: String, name: String) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn move_to_trash(base: String, name: String) -> Result<(), String> {
+    let path = PathBuf::from(&base).join(name);
+    trash::delete(&path).map_err(|e| e.to_string())
+}
+
 fn main() {
     tauri::Builder::default()
     .plugin(tauri_plugin_dialog::init()) 
@@ -106,6 +112,7 @@ fn main() {
             read_folder,
             create_folder,
             create_note,
+            move_to_trash,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
