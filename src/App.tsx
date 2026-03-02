@@ -2,6 +2,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { motion } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
+import { MdNotes } from "react-icons/md";
+import { FaRegFolder } from "react-icons/fa";
 
 type Entry = {
   name: string;
@@ -152,9 +154,9 @@ function Sidebar({
             animate={{ opacity: 1 }}
             transition={{ duration: 0.15 }}
             onClick={() => file.is_dir && onOpenFolder(file.name)}
-            className="text-neutral-600 cursor-pointer hover:text-neutral-900 transition"
+            className="text-neutral-600 cursor-pointer hover:text-neutral-900 transition flex items-center gap-2"
           >
-            {file.is_dir ? "📁" : "📝"} {file.name}
+            {file.is_dir ? <FaRegFolder /> : <MdNotes />} {file.name}
           </motion.div>
         ))}
       </div>
