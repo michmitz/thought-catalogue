@@ -1,5 +1,7 @@
+import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type View = "root" | "folder";
 
@@ -101,6 +103,25 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [view, setView] = useState<View>("root");
   const [direction, setDirection] = useState(1);
+
+  useEffect(() => {
+    async function init() {
+      const saved = await invoke<string | null>("get_saved_folder");
+
+      if (!saved) {
+        const selected = await open({
+          directory: true,
+          multiple: false,
+        });
+
+        if (typeof selected === "string") {
+          await invoke("choose_folder", { path: selected });
+        }
+      }
+    }
+
+    init();
+  }, []);
 
   const navigateForward = () => {
     setDirection(1);
