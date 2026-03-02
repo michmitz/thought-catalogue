@@ -69,14 +69,32 @@ fn read_folder(base: String, child: Option<String>) -> Result<Vec<Entry>, String
     for entry in entries {
         let entry = entry.map_err(|e| e.to_string())?;
         let metadata = entry.metadata().map_err(|e| e.to_string())?;
+        let name = entry.file_name().to_string_lossy().to_string();
+
+        if name == ".DS_Store" {
+            continue;
+        }
 
         items.push(Entry {
-            name: entry.file_name().to_string_lossy().to_string(),
+            name,
             is_dir: metadata.is_dir(),
         });
     }
 
     Ok(items)
+}
+
+#[tauri::command]
+fn create_folder(base: String, name: String) -> Result<(), String> {
+    let path = PathBuf::from(&base).join(name.trim());
+    fs::create_dir(&path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn create_note(base: String, name: String) -> Result<(), String> {
+    let path = PathBuf::from(&base).join(name.trim());
+    fs::File::create(&path).map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 fn main() {
@@ -86,6 +104,8 @@ fn main() {
             choose_folder,
             get_saved_folder,
             read_folder,
+            create_folder,
+            create_note,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
