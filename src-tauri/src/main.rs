@@ -8,6 +8,8 @@ use tauri::Manager;
 #[derive(Serialize, Deserialize)]
 struct AppConfig {
     folder_path: String,
+    #[serde(default)]
+    pinned_paths: Vec<String>,
 }
 
 fn get_config_path(app: &tauri::AppHandle) -> PathBuf {
@@ -21,30 +23,52 @@ fn get_config_path(app: &tauri::AppHandle) -> PathBuf {
   path
 }
 
+fn read_config(app: &tauri::AppHandle) -> AppConfig {
+    let config_path = get_config_path(app);
+    if let Ok(contents) = fs::read_to_string(config_path) {
+        if let Ok(config) = serde_json::from_str::<AppConfig>(&contents) {
+            return config;
+        }
+    }
+    AppConfig {
+        folder_path: String::new(),
+        pinned_paths: Vec::new(),
+    }
+}
+
+fn write_config(app: &tauri::AppHandle, config: &AppConfig) -> Result<(), String> {
+    let config_path = get_config_path(app);
+    let json = serde_json::to_string(config).map_err(|e| e.to_string())?;
+    fs::write(config_path, json).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 fn choose_folder(app: tauri::AppHandle, path: String) -> Result<(), String> {
-    let config = AppConfig { folder_path: path.clone() };
-
-    let config_path = get_config_path(&app);
-
-    let json = serde_json::to_string(&config)
-      .map_err(|e| e.to_string())?;
-    fs::write(config_path, json).map_err(|e| e.to_string())?;
-
-    Ok(())
+    let mut config = read_config(&app);
+    config.folder_path = path;
+    write_config(&app, &config)
 }
 
 #[tauri::command]
 fn get_saved_folder(app: tauri::AppHandle) -> Option<String> {
-    let config_path = get_config_path(&app);
-
-    if let Ok(contents) = fs::read_to_string(config_path) {
-        if let Ok(config) = serde_json::from_str::<AppConfig>(&contents) {
-            return Some(config.folder_path);
-        }
+    let config = read_config(&app);
+    if config.folder_path.is_empty() {
+        None
+    } else {
+        Some(config.folder_path)
     }
+}
 
-    None
+#[tauri::command]
+fn get_pinned_paths(app: tauri::AppHandle) -> Vec<String> {
+    read_config(&app).pinned_paths
+}
+
+#[tauri::command]
+fn set_pinned_paths(app: tauri::AppHandle, paths: Vec<String>) -> Result<(), String> {
+    let mut config = read_config(&app);
+    config.pinned_paths = paths;
+    write_config(&app, &config)
 }
 
 #[derive(Serialize)]
@@ -109,6 +133,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             choose_folder,
             get_saved_folder,
+            get_pinned_paths,
+            set_pinned_paths,
             read_folder,
             create_folder,
             create_note,

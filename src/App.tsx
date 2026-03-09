@@ -3,7 +3,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { motion } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { MdNotes } from "react-icons/md";
-import { FaRegFolder, FaTrash } from "react-icons/fa";
+import { FaRegFolder, FaThumbtack, FaTrash } from "react-icons/fa";
 
 type Entry = {
   name: string;
@@ -97,6 +97,9 @@ function Sidebar({
   onAddFolder,
   onAddNote,
   onDeleteEntry,
+  pinnedPaths,
+  onTogglePin,
+  onNavigateToPinned,
 }: {
   open: boolean;
   files: Entry[];
@@ -107,7 +110,12 @@ function Sidebar({
   onAddFolder: () => void;
   onAddNote: () => void;
   onDeleteEntry: (entry: Entry) => void;
+  pinnedPaths: Set<string>;
+  onTogglePin: (entry: Entry) => void;
+  onNavigateToPinned: (fullPath: string) => void;
 }) {
+  const pinnedList = Array.from(pinnedPaths).sort();
+
   return (
     <motion.div
       animate={{ width: open ? 260 : 0 }}
@@ -115,18 +123,33 @@ function Sidebar({
       className="overflow-hidden border-r border-neutral-200 bg-neutral-50"
     >
       <div className="p-6 space-y-2">
-        {currentPath && (
-          <div className="text-xs text-neutral-400 mb-4 break-all">
-            {currentPath}
-          </div>
-        )}
 
-        {canGoBack && (
-          <div
-            onClick={onBack}
-            className="text-neutral-400 cursor-pointer mb-4 hover:text-neutral-800 transition"
-          >
-            ← Back
+        {pinnedList.length > 0 && (
+          <div className="mb-4">
+            <div className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2">
+              Pinned
+            </div>
+            <div className="space-y-0.5">
+              {pinnedList.map((fullPath) => {
+                const name =
+                  fullPath.split("/").filter(Boolean).pop() ?? fullPath;
+                const isNote = name.endsWith(".md");
+                return (
+                  <div
+                    key={fullPath}
+                    onClick={() => onNavigateToPinned(fullPath)}
+                    className="group flex items-center gap-2 rounded hover:bg-amber-50/80 py-0.5 cursor-pointer text-blue-900/90 hover:text-amber-900"
+                  >
+                    {isNote ? (
+                      <MdNotes className="w-4 h-4 flex-shrink-0" />
+                    ) : (
+                      <FaRegFolder className="w-4 h-4 flex-shrink-0" />
+                    )}
+                    <span className="truncate text-sm">{name}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -149,37 +172,81 @@ function Sidebar({
           </button>
         </div>
 
-        {files.map((file) => (
-          <motion.div
-            key={file.name}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.15 }}
-            className="group flex items-center gap-2 rounded hover:bg-neutral-100/80"
+        {currentPath && (
+          <div className="text-xs text-neutral-400 mb-4 break-all">
+            {currentPath}
+          </div>
+        )}
+
+        {canGoBack && (
+          <div
+            onClick={onBack}
+            className="text-neutral-400 cursor-pointer mb-4 hover:text-neutral-800 transition"
           >
-            <div
-              onClick={() => file.is_dir && onOpenFolder(file.name)}
-              className={`flex-1 flex items-center gap-2 min-w-0 py-0.5 ${
-                file.is_dir ? "cursor-pointer" : "cursor-default"
-              } text-neutral-600 hover:text-neutral-900 transition`}
+            ← Back
+          </div>
+        )}
+
+        {/* {currentPath && (
+          <div className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2">
+            This folder
+          </div>
+        )} */}
+
+        {files.map((file) => {
+          const fullPath = currentPath ? `${currentPath}/${file.name}` : "";
+          const isPinned = fullPath ? pinnedPaths.has(fullPath) : false;
+          if (isPinned) return null;
+          return (
+            <motion.div
+              key={file.name}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.15 }}
+              className="group flex items-center gap-2 rounded hover:bg-neutral-100/80"
             >
-              {file.is_dir ? <FaRegFolder /> : <MdNotes />}{" "}
-              <span className="truncate">{file.name}</span>
-            </div>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeleteEntry(file);
-              }}
-              className="opacity-0 group-hover:opacity-100 p-1 rounded text-neutral-400 hover:text-red-600 hover:bg-red-50 transition flex-shrink-0"
-              title={file.is_dir ? "Move folder to trash" : "Move note to trash"}
-              aria-label="Move to trash"
-            >
-              <FaTrash className="w-3.5 h-3.5" />
-            </button>
-          </motion.div>
-        ))}
+              <div
+                onClick={() => file.is_dir && onOpenFolder(file.name)}
+                className={`flex-1 flex items-center gap-2 min-w-0 py-0.5 ${
+                  file.is_dir ? "cursor-pointer" : "cursor-default"
+                } text-neutral-600 hover:text-neutral-900 transition`}
+              >
+                {file.is_dir ? <FaRegFolder /> : <MdNotes />}{" "}
+                <span className="truncate">{file.name}</span>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTogglePin(file);
+                }}
+                className={`cursor-pointer p-1 rounded transition flex-shrink-0 ${
+                  isPinned
+                    ? "opacity-100 text-amber-600 hover:bg-amber-50"
+                    : "opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-amber-600 hover:bg-amber-50/50"
+                }`}
+                title={isPinned ? "Unpin" : "Pin to top"}
+                aria-label={isPinned ? "Unpin" : "Pin to top"}
+              >
+                <FaThumbtack className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteEntry(file);
+                }}
+                className="cursor-pointer opacity-0 group-hover:opacity-100 p-1 rounded text-neutral-400 hover:text-red-400 hover:bg-red-50 transition flex-shrink-0"
+                title={
+                  file.is_dir ? "Move folder to trash" : "Move note to trash"
+                }
+                aria-label="Move to trash"
+              >
+                <FaTrash className="w-3.5 h-3.5" />
+              </button>
+            </motion.div>
+          );
+        })}
       </div>
     </motion.div>
   );
@@ -193,9 +260,11 @@ function TopBar({
   setSidebarOpen: (value: boolean) => void;
 }) {
   return (
-    <div className="px-8 pt-8 pb-4 border-b border-neutral-200 bg-white">
+    <div className="px-8 pt-8 pb-4 border-b border-neutral-200 bg-slate-300">
       <div className="flex items-center justify-between">
-        <div className="text-lg font-medium">Thoughts</div>
+        <div className="text-lg font-medium text-white uppercase tracking-wide">
+          Thoughts
+        </div>
 
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -212,10 +281,10 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [files, setFiles] = useState<Entry[]>([]);
   const [pathStack, setPathStack] = useState<string[]>([]);
+  const [pinnedPaths, setPinnedPaths] = useState<Set<string>>(new Set());
   const [promptMode, setPromptMode] = useState<EntryPromptMode>(null);
   const [promptError, setPromptError] = useState<string | null>(null);
 
-  // Initial folder load
   useEffect(() => {
     async function init() {
       let saved = await invoke<string | null>("get_saved_folder");
@@ -242,6 +311,9 @@ export default function App() {
 
         setFiles(contents);
       }
+
+      const pinned = await invoke<string[]>("get_pinned_paths");
+      setPinnedPaths(new Set(pinned));
     }
 
     init();
@@ -346,11 +418,51 @@ export default function App() {
     }
   }
 
+  async function handleTogglePin(entry: Entry) {
+    const path = pathStack.length > 0 ? pathStack[pathStack.length - 1] : null;
+    if (!path) return;
+    const fullPath = `${path}/${entry.name}`;
+    const next = new Set(pinnedPaths);
+    if (next.has(fullPath)) {
+      next.delete(fullPath);
+    } else {
+      next.add(fullPath);
+    }
+    setPinnedPaths(next);
+    try {
+      await invoke("set_pinned_paths", { paths: Array.from(next) });
+    } catch (err) {
+      setPinnedPaths(pinnedPaths);
+      window.alert("Could not save pin. " + (err as Error).message);
+    }
+  }
+
+  async function handleNavigateToPinned(fullPath: string) {
+    const root = pathStack[0];
+    if (!root) return;
+    const targetDir = fullPath.endsWith(".md")
+      ? fullPath.slice(0, fullPath.lastIndexOf("/"))
+      : fullPath;
+    if (!targetDir.startsWith(root)) return;
+    const relative = targetDir.slice(root.length).replace(/^\/+/, "");
+    const segments = relative ? relative.split("/").filter(Boolean) : [];
+    const newStack = [root];
+    for (let i = 0; i < segments.length; i++) {
+      newStack.push(`${newStack[newStack.length - 1]}/${segments[i]}`);
+    }
+    const contents = await invoke<Entry[]>("read_folder", {
+      base: targetDir,
+      child: null,
+    });
+    setPathStack(newStack);
+    setFiles(contents);
+  }
+
   const currentPath =
     pathStack.length > 0 ? pathStack[pathStack.length - 1] : null;
 
   return (
-    <div className="h-screen bg-neutral-100 text-neutral-900 flex flex-col">
+    <div className="h-screen w-screen bg-neutral-800 flex flex-col">
       <EntryNamePromptModal
         key={promptMode ?? "closed"}
         mode={promptMode}
@@ -372,6 +484,9 @@ export default function App() {
           onAddFolder={handleAddFolder}
           onAddNote={handleAddNote}
           onDeleteEntry={handleDeleteEntry}
+          pinnedPaths={pinnedPaths}
+          onTogglePin={handleTogglePin}
+          onNavigateToPinned={handleNavigateToPinned}
         />
 
         <div className="flex-1 p-8 bg-white">
