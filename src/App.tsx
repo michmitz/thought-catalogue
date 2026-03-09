@@ -12,6 +12,12 @@ type Entry = {
 
 type EntryPromptMode = "folder" | "note" | null;
 
+function getInvokeErrorMessage(err: unknown): string {
+  if (typeof err === "string") return err;
+  if (err instanceof Error) return err.message;
+  return String(err);
+}
+
 function EntryNamePromptModal({
   mode,
   defaultName,
@@ -398,7 +404,7 @@ export default function App() {
       await refreshFiles();
       setPromptMode(null);
     } catch (err) {
-      setPromptError("Could not create. " + (err as Error).message);
+      setPromptError("Could not create. " + getInvokeErrorMessage(err));
     }
   }
 
@@ -414,7 +420,7 @@ export default function App() {
       await invoke("move_to_trash", { base: path, name: entry.name });
       await refreshFiles();
     } catch (err) {
-      window.alert("Could not move to trash. " + (err as Error).message);
+      window.alert("Could not move to trash. " + getInvokeErrorMessage(err));
     }
   }
 
@@ -433,7 +439,7 @@ export default function App() {
       await invoke("set_pinned_paths", { paths: Array.from(next) });
     } catch (err) {
       setPinnedPaths(pinnedPaths);
-      window.alert("Could not save pin. " + (err as Error).message);
+      window.alert("Could not save pin. " + getInvokeErrorMessage(err));
     }
   }
 
