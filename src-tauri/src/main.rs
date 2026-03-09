@@ -117,7 +117,11 @@ fn create_folder(base: String, name: String) -> Result<(), String> {
 #[tauri::command]
 fn create_note(base: String, name: String) -> Result<(), String> {
     let path = PathBuf::from(&base).join(name.trim());
-    fs::File::create(&path).map_err(|e| e.to_string())?;
+    fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&path)
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
