@@ -105,6 +105,7 @@ function Sidebar({
   onDeleteEntry,
   pinnedPaths,
   onTogglePin,
+  onUnpinPath,
   onNavigateToPinned,
 }: {
   open: boolean;
@@ -118,6 +119,7 @@ function Sidebar({
   onDeleteEntry: (entry: Entry) => void;
   pinnedPaths: Set<string>;
   onTogglePin: (entry: Entry) => void;
+  onUnpinPath: (fullPath: string) => void;
   onNavigateToPinned: (fullPath: string) => void;
 }) {
   const pinnedList = Array.from(pinnedPaths).sort();
@@ -143,15 +145,31 @@ function Sidebar({
                 return (
                   <div
                     key={fullPath}
-                    onClick={() => onNavigateToPinned(fullPath)}
-                    className="group flex items-center gap-2 rounded hover:bg-amber-50/80 py-0.5 cursor-pointer text-blue-900/90 hover:text-amber-900"
+                    className="group flex items-center gap-2 rounded hover:bg-amber-50/80 py-0.5 text-blue-900/90 hover:text-amber-900"
                   >
-                    {isNote ? (
-                      <MdNotes className="w-4 h-4 flex-shrink-0" />
-                    ) : (
-                      <FaRegFolder className="w-4 h-4 flex-shrink-0" />
-                    )}
-                    <span className="truncate text-sm">{name}</span>
+                    <div
+                      onClick={() => onNavigateToPinned(fullPath)}
+                      className="flex-1 flex items-center gap-2 min-w-0 cursor-pointer"
+                    >
+                      {isNote ? (
+                        <MdNotes className="w-4 h-4 flex-shrink-0" />
+                      ) : (
+                        <FaRegFolder className="w-4 h-4 flex-shrink-0" />
+                      )}
+                      <span className="truncate text-sm">{name}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onUnpinPath(fullPath);
+                      }}
+                      className="cursor-pointer p-1 rounded transition flex-shrink-0 opacity-0 group-hover:opacity-100 text-amber-600 hover:bg-amber-50"
+                      title="Unpin"
+                      aria-label="Unpin"
+                    >
+                      <FaThumbtack className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 );
               })}
@@ -443,6 +461,18 @@ export default function App() {
     }
   }
 
+  async function handleUnpinPath(fullPath: string) {
+    const next = new Set(pinnedPaths);
+    next.delete(fullPath);
+    setPinnedPaths(next);
+    try {
+      await invoke("set_pinned_paths", { paths: Array.from(next) });
+    } catch (err) {
+      setPinnedPaths(pinnedPaths);
+      window.alert("Could not save. " + getInvokeErrorMessage(err));
+    }
+  }
+
   async function handleNavigateToPinned(fullPath: string) {
     const root = pathStack[0];
     if (!root) return;
@@ -492,6 +522,7 @@ export default function App() {
           onDeleteEntry={handleDeleteEntry}
           pinnedPaths={pinnedPaths}
           onTogglePin={handleTogglePin}
+          onUnpinPath={handleUnpinPath}
           onNavigateToPinned={handleNavigateToPinned}
         />
 
