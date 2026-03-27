@@ -5,8 +5,21 @@ use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
 use tauri::Manager;
 
+#[derive(Serialize, Deserialize, Clone)]
+struct PinnedEntry {
+    path: String,
+    is_dir: bool,
+}
+
 #[derive(Serialize, Deserialize)]
 struct AppConfig {
+    folder_path: String,
+    #[serde(default)]
+    pinned: Vec<PinnedEntry>,
+}
+
+#[derive(Deserialize)]
+struct LegacyAppConfig {
     folder_path: String,
     #[serde(default)]
     pinned_paths: Vec<String>,
@@ -29,10 +42,28 @@ fn read_config(app: &tauri::AppHandle) -> AppConfig {
         if let Ok(config) = serde_json::from_str::<AppConfig>(&contents) {
             return config;
         }
+        if let Ok(legacy) = serde_json::from_str::<LegacyAppConfig>(&contents) {
+            let pinned = legacy
+                .pinned_paths
+                .into_iter()
+                .map(|path| PinnedEntry {
+                    is_dir: PathBuf::from(&path)
+                        .metadata()
+                        .ok()
+                        .map(|m| m.is_dir())
+                        .unwrap_or(false),
+                    path,
+                })
+                .collect();
+            return AppConfig {
+                folder_path: legacy.folder_path,
+                pinned,
+            };
+        }
     }
     AppConfig {
         folder_path: String::new(),
-        pinned_paths: Vec::new(),
+        pinned: Vec::new(),
     }
 }
 
@@ -60,14 +91,14 @@ fn get_saved_folder(app: tauri::AppHandle) -> Option<String> {
 }
 
 #[tauri::command]
-fn get_pinned_paths(app: tauri::AppHandle) -> Vec<String> {
-    read_config(&app).pinned_paths
+fn get_pinned(app: tauri::AppHandle) -> Vec<PinnedEntry> {
+    read_config(&app).pinned
 }
 
 #[tauri::command]
-fn set_pinned_paths(app: tauri::AppHandle, paths: Vec<String>) -> Result<(), String> {
+fn set_pinned(app: tauri::AppHandle, pinned: Vec<PinnedEntry>) -> Result<(), String> {
     let mut config = read_config(&app);
-    config.pinned_paths = paths;
+    config.pinned = pinned;
     write_config(&app, &config)
 }
 
@@ -137,8 +168,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             choose_folder,
             get_saved_folder,
-            get_pinned_paths,
-            set_pinned_paths,
+            get_pinned,
+            set_pinned,
             read_folder,
             create_folder,
             create_note,

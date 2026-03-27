@@ -1,12 +1,17 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { motion } from "framer-motion";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { MdNotes } from "react-icons/md";
 import { FaRegFolder, FaThumbtack, FaTrash } from "react-icons/fa";
 
 type Entry = {
   name: string;
+  is_dir: boolean;
+};
+
+type PinnedEntry = {
+  path: string;
   is_dir: boolean;
 };
 
@@ -104,6 +109,7 @@ function Sidebar({
   onAddNote,
   onDeleteEntry,
   pinnedPaths,
+  pinnedEntries,
   onTogglePin,
   onUnpinPath,
   onNavigateToPinned,
@@ -118,11 +124,14 @@ function Sidebar({
   onAddNote: () => void;
   onDeleteEntry: (entry: Entry) => void;
   pinnedPaths: Set<string>;
+  pinnedEntries: PinnedEntry[];
   onTogglePin: (entry: Entry) => void;
   onUnpinPath: (fullPath: string) => void;
-  onNavigateToPinned: (fullPath: string) => void;
+  onNavigateToPinned: (entry: PinnedEntry) => void;
 }) {
-  const pinnedList = Array.from(pinnedPaths).sort();
+  const pinnedList = [...pinnedEntries].sort((a, b) =>
+    a.path.localeCompare(b.path),
+  );
 
   return (
     <motion.div
@@ -138,23 +147,22 @@ function Sidebar({
               Pinned
             </div>
             <div className="space-y-0.5">
-              {pinnedList.map((fullPath) => {
+              {pinnedList.map((pin) => {
                 const name =
-                  fullPath.split("/").filter(Boolean).pop() ?? fullPath;
-                const isNote = name.endsWith(".md");
+                  pin.path.split("/").filter(Boolean).pop() ?? pin.path;
                 return (
                   <div
-                    key={fullPath}
+                    key={pin.path}
                     className="group flex items-center gap-2 rounded hover:bg-amber-50/80 py-0.5 text-blue-900/90 hover:text-amber-900"
                   >
                     <div
-                      onClick={() => onNavigateToPinned(fullPath)}
+                      onClick={() => onNavigateToPinned(pin)}
                       className="flex-1 flex items-center gap-2 min-w-0 cursor-pointer"
                     >
-                      {isNote ? (
-                        <MdNotes className="w-4 h-4 flex-shrink-0" />
-                      ) : (
+                      {pin.is_dir ? (
                         <FaRegFolder className="w-4 h-4 flex-shrink-0" />
+                      ) : (
+                        <MdNotes className="w-4 h-4 flex-shrink-0" />
                       )}
                       <span className="truncate text-sm">{name}</span>
                     </div>
@@ -162,7 +170,7 @@ function Sidebar({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onUnpinPath(fullPath);
+                        onUnpinPath(pin.path);
                       }}
                       className="cursor-pointer p-1 rounded transition flex-shrink-0 opacity-0 group-hover:opacity-100 text-amber-600 hover:bg-amber-50"
                       title="Unpin"
@@ -305,7 +313,11 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [files, setFiles] = useState<Entry[]>([]);
   const [pathStack, setPathStack] = useState<string[]>([]);
-  const [pinnedPaths, setPinnedPaths] = useState<Set<string>>(new Set());
+  const [pinnedEntries, setPinnedEntries] = useState<PinnedEntry[]>([]);
+  const pinnedPathSet = useMemo(
+    () => new Set(pinnedEntries.map((p) => p.path)),
+    [pinnedEntries],
+  );
   const [promptMode, setPromptMode] = useState<EntryPromptMode>(null);
   const [promptError, setPromptError] = useState<string | null>(null);
 
@@ -336,8 +348,8 @@ export default function App() {
         setFiles(contents);
       }
 
-      const pinned = await invoke<string[]>("get_pinned_paths");
-      setPinnedPaths(new Set(pinned));
+      const pinned = await invoke<PinnedEntry[]>("get_pinned");
+      setPinnedEntries(pinned);
     }
 
     init();
@@ -446,39 +458,42 @@ export default function App() {
     const path = pathStack.length > 0 ? pathStack[pathStack.length - 1] : null;
     if (!path) return;
     const fullPath = `${path}/${entry.name}`;
-    const next = new Set(pinnedPaths);
-    if (next.has(fullPath)) {
-      next.delete(fullPath);
-    } else {
-      next.add(fullPath);
-    }
-    setPinnedPaths(next);
+    const prev = pinnedEntries;
+    const idx = prev.findIndex((p) => p.path === fullPath);
+    const next =
+      idx >= 0
+        ? prev.filter((_, i) => i !== idx)
+        : [...prev, { path: fullPath, is_dir: entry.is_dir }];
+    setPinnedEntries(next);
     try {
-      await invoke("set_pinned_paths", { paths: Array.from(next) });
+      await invoke("set_pinned", { pinned: next });
     } catch (err) {
-      setPinnedPaths(pinnedPaths);
+      setPinnedEntries(prev);
       window.alert("Could not save pin. " + getInvokeErrorMessage(err));
     }
   }
 
   async function handleUnpinPath(fullPath: string) {
-    const next = new Set(pinnedPaths);
-    next.delete(fullPath);
-    setPinnedPaths(next);
+    const prev = pinnedEntries;
+    const next = prev.filter((p) => p.path !== fullPath);
+    setPinnedEntries(next);
     try {
-      await invoke("set_pinned_paths", { paths: Array.from(next) });
+      await invoke("set_pinned", { pinned: next });
     } catch (err) {
-      setPinnedPaths(pinnedPaths);
+      setPinnedEntries(prev);
       window.alert("Could not save. " + getInvokeErrorMessage(err));
     }
   }
 
-  async function handleNavigateToPinned(fullPath: string) {
+  async function handleNavigateToPinned(pin: PinnedEntry) {
     const root = pathStack[0];
     if (!root) return;
-    const targetDir = fullPath.endsWith(".md")
-      ? fullPath.slice(0, fullPath.lastIndexOf("/"))
-      : fullPath;
+    const fullPath = pin.path;
+    const targetDir = pin.is_dir
+      ? fullPath
+      : fullPath.includes("/")
+        ? fullPath.slice(0, fullPath.lastIndexOf("/"))
+        : root;
     if (!targetDir.startsWith(root)) return;
     const relative = targetDir.slice(root.length).replace(/^\/+/, "");
     const segments = relative ? relative.split("/").filter(Boolean) : [];
@@ -520,7 +535,8 @@ export default function App() {
           onAddFolder={handleAddFolder}
           onAddNote={handleAddNote}
           onDeleteEntry={handleDeleteEntry}
-          pinnedPaths={pinnedPaths}
+          pinnedPaths={pinnedPathSet}
+          pinnedEntries={pinnedEntries}
           onTogglePin={handleTogglePin}
           onUnpinPath={handleUnpinPath}
           onNavigateToPinned={handleNavigateToPinned}
