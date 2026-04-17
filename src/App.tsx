@@ -1,7 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { motion } from "framer-motion";
-import { useEffect, useState, useRef, useMemo } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { MdNotes } from "react-icons/md";
 import { FaRegFolder, FaThumbtack, FaTrash } from "react-icons/fa";
 
@@ -102,6 +109,8 @@ function Sidebar({
   open,
   files,
   onOpenFolder,
+  onSelectNote,
+  selectedNote,
   onBack,
   canGoBack,
   currentPath,
@@ -117,6 +126,8 @@ function Sidebar({
   open: boolean;
   files: Entry[];
   onOpenFolder: (name: string) => void;
+  onSelectNote: (entry: Entry) => void;
+  selectedNote: { base: string; name: string } | null;
   onBack: () => void;
   canGoBack: boolean;
   currentPath: string | null;
@@ -150,10 +161,18 @@ function Sidebar({
               {pinnedList.map((pin) => {
                 const name =
                   pin.path.split("/").filter(Boolean).pop() ?? pin.path;
+                const isSelectedNote =
+                  !pin.is_dir &&
+                  selectedNote &&
+                  `${selectedNote.base}/${selectedNote.name}` === pin.path;
                 return (
                   <div
                     key={pin.path}
-                    className="group flex items-center gap-2 rounded hover:bg-amber-50/80 py-0.5 text-blue-900/90 hover:text-amber-900"
+                    className={`group flex items-center gap-2 rounded hover:bg-amber-50/80 py-0.5 ${
+                      isSelectedNote
+                        ? "text-amber-950 font-medium"
+                        : "text-blue-900/90 hover:text-amber-900"
+                    }`}
                   >
                     <div
                       onClick={() => onNavigateToPinned(pin)}
@@ -238,10 +257,21 @@ function Sidebar({
               className="group flex items-center gap-2 rounded hover:bg-neutral-100/80"
             >
               <div
-                onClick={() => file.is_dir && onOpenFolder(file.name)}
+                onClick={() =>
+                  file.is_dir
+                    ? onOpenFolder(file.name)
+                    : onSelectNote(file)
+                }
                 className={`flex-1 flex items-center gap-2 min-w-0 py-0.5 ${
-                  file.is_dir ? "cursor-pointer" : "cursor-default"
-                } text-neutral-600 hover:text-neutral-900 transition`}
+                  file.is_dir ? "cursor-pointer" : "cursor-pointer"
+                } ${
+                  !file.is_dir &&
+                  selectedNote &&
+                  currentPath === selectedNote.base &&
+                  selectedNote.name === file.name
+                    ? "text-neutral-900 font-medium"
+                    : "text-neutral-600"
+                } hover:text-neutral-900 transition`}
               >
                 {file.is_dir ? <FaRegFolder /> : <MdNotes />}{" "}
                 <span className="truncate">{file.name}</span>
@@ -284,6 +314,164 @@ function Sidebar({
   );
 }
 
+type SelectedNote = { base: string; name: string };
+
+function NoteEditor({
+  note,
+  onError,
+}: {
+  note: SelectedNote;
+  onError: (message: string) => void;
+}) {
+  const [content, setContent] = useState("");
+  const [loaded, setLoaded] = useState(false);
+  const [readOk, setReadOk] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
+    "idle",
+  );
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const contentRef = useRef("");
+  const lastSavedRef = useRef("");
+  const onErrorRef = useRef(onError);
+  const readOkRef = useRef(false);
+
+  useLayoutEffect(() => {
+    contentRef.current = content;
+    onErrorRef.current = onError;
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoaded(false);
+      readOkRef.current = false;
+      setReadOk(false);
+      setSaveStatus("idle");
+      try {
+        const text = await invoke<string>("read_note", {
+          base: note.base,
+          name: note.name,
+        });
+        if (!cancelled) {
+          setContent(text);
+          lastSavedRef.current = text;
+          readOkRef.current = true;
+          setReadOk(true);
+          setLoaded(true);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          onErrorRef.current(getInvokeErrorMessage(err));
+          setContent("");
+          readOkRef.current = false;
+          setReadOk(false);
+          setLoaded(true);
+        }
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [note.base, note.name]);
+
+  useEffect(() => {
+    if (!loaded || !readOk) return;
+    if (content === lastSavedRef.current) return;
+    const t = window.setTimeout(async () => {
+      const c = contentRef.current;
+      if (c === lastSavedRef.current) {
+        return;
+      }
+      setSaveStatus("saving");
+      try {
+        await invoke("write_note", {
+          base: note.base,
+          name: note.name,
+          content: c,
+        });
+        lastSavedRef.current = c;
+        setSaveStatus("saved");
+        window.setTimeout(() => setSaveStatus("idle"), 1200);
+      } catch (err) {
+        setSaveStatus("idle");
+        onErrorRef.current(getInvokeErrorMessage(err));
+      }
+    }, 450);
+    return () => window.clearTimeout(t);
+  }, [content, loaded, readOk, note.base, note.name]);
+
+  useEffect(() => {
+    const base = note.base;
+    const name = note.name;
+    return () => {
+      if (!readOkRef.current) return;
+      const c = contentRef.current;
+      if (c !== lastSavedRef.current) {
+        invoke("write_note", { base, name, content: c }).catch((err) => {
+          console.error(err);
+        });
+      }
+    };
+  }, [note.base, note.name]);
+
+  function insertParagraphBreak() {
+    if (!readOk) return;
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    setContent((prev) => {
+      const before = prev.slice(0, start);
+      const after = prev.slice(end);
+      return before + "\n\n" + after;
+    });
+    const cursor = start + 2;
+    requestAnimationFrame(() => {
+      const el = textareaRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(cursor, cursor);
+    });
+  }
+
+  return (
+    <div className="flex flex-col h-full min-h-0">
+      <div className="flex items-center justify-between gap-4 mb-3 flex-shrink-0">
+        <h2 className="text-sm font-medium text-neutral-800 truncate">
+          {note.name}
+        </h2>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <span className="text-xs text-neutral-400 tabular-nums">
+            {saveStatus === "saving" && "Saving…"}
+            {saveStatus === "saved" && "Saved"}
+          </span>
+          <div className="flex items-center gap-1 border border-neutral-200 rounded-md bg-neutral-50 p-0.5">
+            <button
+              type="button"
+              onClick={insertParagraphBreak}
+              disabled={!readOk}
+              className="px-2.5 py-1 text-xs text-neutral-700 rounded hover:bg-white hover:shadow-sm transition disabled:opacity-40 disabled:pointer-events-none"
+              title="Insert a paragraph break (blank line)"
+            >
+              Paragraph
+            </button>
+          </div>
+        </div>
+      </div>
+      <textarea
+        ref={textareaRef}
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        spellCheck
+        className="flex-1 w-full min-h-[200px] resize-none rounded-lg border border-neutral-200 bg-neutral-50/50 px-4 py-3 text-neutral-800 text-[15px] leading-relaxed placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300 focus:bg-white font-sans"
+        placeholder="Write here. Use Paragraph in the toolbar or press Enter twice for a new paragraph."
+        disabled={!loaded || !readOk}
+      />
+    </div>
+  );
+}
+
 function TopBar({
   sidebarOpen,
   setSidebarOpen,
@@ -320,6 +508,11 @@ export default function App() {
   );
   const [promptMode, setPromptMode] = useState<EntryPromptMode>(null);
   const [promptError, setPromptError] = useState<string | null>(null);
+  const [selectedNote, setSelectedNote] = useState<SelectedNote | null>(null);
+
+  const handleNoteEditorError = useCallback((msg: string) => {
+    window.alert("Could not load or save note. " + msg);
+  }, []);
 
   useEffect(() => {
     async function init() {
@@ -366,6 +559,7 @@ export default function App() {
 
     const newPath = `${currentPath}/${name}`;
 
+    setSelectedNote(null);
     setPathStack([...pathStack, newPath]);
     setFiles(contents);
   }
@@ -381,6 +575,7 @@ export default function App() {
       child: null,
     });
 
+    setSelectedNote(null);
     setPathStack(newStack);
     setFiles(contents);
   }
@@ -448,6 +643,14 @@ export default function App() {
     if (!path) return;
     try {
       await invoke("move_to_trash", { base: path, name: entry.name });
+      if (
+        selectedNote &&
+        !entry.is_dir &&
+        selectedNote.base === path &&
+        selectedNote.name === entry.name
+      ) {
+        setSelectedNote(null);
+      }
       await refreshFiles();
     } catch (err) {
       window.alert("Could not move to trash. " + getInvokeErrorMessage(err));
@@ -507,6 +710,23 @@ export default function App() {
     });
     setPathStack(newStack);
     setFiles(contents);
+    if (!pin.is_dir) {
+      const fileName = fullPath.split("/").filter(Boolean).pop();
+      if (fileName) {
+        setSelectedNote({ base: targetDir, name: fileName });
+      } else {
+        setSelectedNote(null);
+      }
+    } else {
+      setSelectedNote(null);
+    }
+  }
+
+  function handleSelectNote(entry: Entry) {
+    if (entry.is_dir) return;
+    const path = pathStack[pathStack.length - 1];
+    if (!path) return;
+    setSelectedNote({ base: path, name: entry.name });
   }
 
   const currentPath =
@@ -529,6 +749,8 @@ export default function App() {
           open={sidebarOpen}
           files={files}
           onOpenFolder={openFolder}
+          onSelectNote={handleSelectNote}
+          selectedNote={selectedNote}
           onBack={goBack}
           canGoBack={pathStack.length > 1}
           currentPath={currentPath}
@@ -542,10 +764,18 @@ export default function App() {
           onNavigateToPinned={handleNavigateToPinned}
         />
 
-        <div className="flex-1 p-8 bg-white">
-          <div className="text-neutral-500">
-            Select a folder or note from the sidebar.
-          </div>
+        <div className="flex-1 p-8 bg-white min-h-0 flex flex-col overflow-hidden">
+          {selectedNote ? (
+            <NoteEditor
+              key={`${selectedNote.base}/${selectedNote.name}`}
+              note={selectedNote}
+              onError={handleNoteEditorError}
+            />
+          ) : (
+            <div className="text-neutral-500">
+              Select a note from the library to read or edit it.
+            </div>
+          )}
         </div>
       </div>
     </div>

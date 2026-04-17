@@ -145,8 +145,20 @@ fn create_folder(base: String, name: String) -> Result<(), String> {
     fs::create_dir(&path).map_err(|e| e.to_string())
 }
 
+fn validate_note_filename(name: &str) -> Result<(), String> {
+    let name = name.trim();
+    if name.is_empty() {
+        return Err("Name cannot be empty.".into());
+    }
+    if name.contains("..") || name.contains('/') || name.contains('\\') {
+        return Err("Invalid note name.".into());
+    }
+    Ok(())
+}
+
 #[tauri::command]
 fn create_note(base: String, name: String) -> Result<(), String> {
+    validate_note_filename(&name)?;
     let path = PathBuf::from(&base).join(name.trim());
     fs::OpenOptions::new()
         .write(true)
@@ -154,6 +166,26 @@ fn create_note(base: String, name: String) -> Result<(), String> {
         .open(&path)
         .map_err(|e| e.to_string())?;
     Ok(())
+}
+
+#[tauri::command]
+fn read_note(base: String, name: String) -> Result<String, String> {
+    validate_note_filename(&name)?;
+    let path = PathBuf::from(&base).join(name.trim());
+    if !path.is_file() {
+        return Err("Not a file.".into());
+    }
+    fs::read_to_string(&path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn write_note(base: String, name: String, content: String) -> Result<(), String> {
+    validate_note_filename(&name)?;
+    let path = PathBuf::from(&base).join(name.trim());
+    if !path.is_file() {
+        return Err("Not a file.".into());
+    }
+    fs::write(&path, content).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -173,6 +205,8 @@ fn main() {
             read_folder,
             create_folder,
             create_note,
+            read_note,
+            write_note,
             move_to_trash,
         ])
         .run(tauri::generate_context!())
