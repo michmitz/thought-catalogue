@@ -17,3 +17,24 @@
 
   --font-prose: Georgia, 'Times New Roman', serif;
 }
+
+.prose-warm {
+  font-family: Georgia, serif;
+  font-size: 17px;
+  color: #2d2926;
+  line-height: 1.85;
+}
+.prose-warm h1 { font-size: 1.7em; font-weight: 600; margin: 0 0 0.6em; }
+.prose-warm h2 { font-size: 1.3em; font-weight: 600; margin: 1.4em 0 0.5em; }
+.prose-warm h3 { font-size: 1.1em; font-weight: 600; margin: 1.2em 0 0.4em; }
+.prose-warm p  { margin: 0 0 0.9em; }
+.prose-warm ul,
+.prose-warm ol { margin: 0 0 0.9em 1.4em; }
+.prose-warm li { margin-bottom: 0.25em; }
+.prose-warm blockquote { border-left: 2.5px solid #a07060; padding-left: 1em; opacity: 0.6; font-style: italic; margin: 1em 0; }
+.prose-warm code { font-family: Menlo, monospace; font-size: 0.875em; background: #f0e4db; padding: 0.1em 0.35em; border-radius: 3px; }
+.prose-warm pre { background: #f0e4db; padding: 1em; border-radius: 6px; overflow-x: auto; margin-bottom: 1em; }
+.prose-warm pre code { background: none; padding: 0; }
+.prose-warm hr { border: none; border-top: 1px solid #e8e3dc; margin: 1.5em 0; }
+.prose-warm strong { font-weight: 600; }
+.prose-warm a { text-decoration: underline; text-underline-offset: 2px; color: #a07060; }
