@@ -11,7 +11,9 @@ export function NoteEditor({ note, onError }: Props) {
   const [content, setContent] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [readOk, setReadOk] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
+    "idle",
+  );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const contentRef = useRef("");
   const lastSavedRef = useRef("");
@@ -31,7 +33,10 @@ export function NoteEditor({ note, onError }: Props) {
       setReadOk(false);
       setSaveStatus("idle");
       try {
-        const text = await invoke<string>("read_note", { base: note.base, name: note.name });
+        const text = await invoke<string>("read_note", {
+          base: note.base,
+          name: note.name,
+        });
         if (!cancelled) {
           setContent(text);
           lastSavedRef.current = text;
@@ -50,7 +55,9 @@ export function NoteEditor({ note, onError }: Props) {
       }
     }
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [note.base, note.name]);
 
   useEffect(() => {
@@ -61,7 +68,11 @@ export function NoteEditor({ note, onError }: Props) {
       if (c === lastSavedRef.current) return;
       setSaveStatus("saving");
       try {
-        await invoke("write_note", { base: note.base, name: note.name, content: c });
+        await invoke("write_note", {
+          base: note.base,
+          name: note.name,
+          content: c,
+        });
         lastSavedRef.current = c;
         setSaveStatus("saved");
         window.setTimeout(() => setSaveStatus("idle"), 1200);
@@ -85,61 +96,58 @@ export function NoteEditor({ note, onError }: Props) {
     };
   }, [note.base, note.name]);
 
-  function insertParagraphBreak() {
-    if (!readOk) return;
-    const ta = textareaRef.current;
-    if (!ta) return;
-    const start = ta.selectionStart;
-    const end = ta.selectionEnd;
-    setContent((prev) => prev.slice(0, start) + "\n\n" + prev.slice(end));
-    const cursor = start + 2;
-    requestAnimationFrame(() => {
-      const el = textareaRef.current;
-      if (!el) return;
-      el.focus();
-      el.setSelectionRange(cursor, cursor);
-    });
-  }
+
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className="flex items-center justify-between gap-4 mb-3 flex-shrink-0">
-        <h2 className="text-sm font-medium text-neutral-800 truncate">{note.name}</h2>
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <span className="text-xs text-neutral-400 tabular-nums">
-            {saveStatus === "saving" && "Saving…"}
-            {saveStatus === "saved" && "Saved"}
-          </span>
-          <div className="flex items-center gap-1 border border-neutral-200 rounded-md bg-neutral-50 p-0.5">
-            <button
-              type="button"
-              onClick={insertParagraphBreak}
-              disabled={!readOk}
-              className="px-2.5 py-1 text-xs text-neutral-700 rounded hover:bg-white hover:shadow-sm transition disabled:opacity-40 disabled:pointer-events-none"
-              title="Insert a paragraph break (blank line)"
-            >
-              Paragraph
-            </button>
-          </div>
-        </div>
+   
+      <div className="h-11 flex items-center px-5 gap-2.5 flex-shrink-0 border-b border-warm-200">
+        <span className="flex-1 text-[14px] font-medium text-warm-500 truncate opacity-60">
+          {note.name.replace(/\.md$/, "")}
+        </span>
+        <span
+          className={`text-[12px] text-warm-400 transition-opacity duration-300 ${
+            saveStatus === "idle" ? "opacity-0" : "opacity-35"
+          }`}
+        >
+          {saveStatus === "saving" ? "Saving…" : "Saved"}
+        </span>
       </div>
-      <textarea
-        ref={textareaRef}
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        spellCheck
-        className="flex-1 w-full min-h-[200px] resize-none rounded-lg border border-neutral-200 bg-neutral-50/50 px-4 py-3 text-neutral-800 text-[15px] leading-relaxed placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300 focus:bg-white font-sans"
-        placeholder="Write here. Use Paragraph in the toolbar or press Enter twice for a new paragraph."
-        disabled={!loaded || !readOk}
-      />
+
+      <div className="flex-1 overflow-y-auto">
+        <textarea
+          ref={textareaRef}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          spellCheck
+          className="block w-full min-h-full resize-none border-none outline-none bg-transparent px-16 py-9 text-warm-900 text-[17px] leading-[1.8] font-prose placeholder:text-warm-400 caret-accent-500 max-w-[680px] disabled:opacity-40"
+          placeholder="Start writing…"
+          disabled={!loaded || !readOk}
+        />
+      </div>
     </div>
   );
 }
 
 export function NoteEditorPlaceholder() {
   return (
-    <div className="text-neutral-500">
-      Select a note from the library to read or edit it.
+    <div className="flex-1 flex flex-col items-center justify-center gap-3 text-warm-500 opacity-30">
+      <svg
+        width="36"
+        height="36"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
+        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
+      </svg>
+      <span className="text-[14px]">Select a note to open it</span>
+      <span className="text-[12px] opacity-60">or create a new one</span>
     </div>
   );
 }

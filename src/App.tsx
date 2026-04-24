@@ -22,7 +22,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className="h-screen w-screen bg-neutral-800 flex flex-col">
+    <div className="h-screen w-screen bg-warm-50 flex flex-col">
       <EntryNamePromptModal
         key={fs.promptMode ?? "closed"}
         mode={fs.promptMode}
@@ -53,7 +53,7 @@ export default function App() {
           onNavigateToPinned={fs.navigateToPinned}
         />
 
-        <div className="flex-1 p-8 bg-white min-h-0 flex flex-col overflow-hidden">
+        <div className="flex-1 bg-warm-50 min-h-0 flex flex-col overflow-hidden">
           {fs.selectedNote ? (
             <NoteEditor
               key={`${fs.selectedNote.base}/${fs.selectedNote.name}`}
