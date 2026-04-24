@@ -1,1 +1,19 @@
 @import "tailwindcss";
+
+@theme {
+  --color-warm-50:  #faf8f5;
+  --color-warm-100: #f3f0ec;
+  --color-warm-200: #e8e3dc;
+  --color-warm-300: #d4ccc3;
+  --color-warm-400: #b5ada6;
+  --color-warm-500: #8a817a;
+  --color-warm-600: #5c534d;
+  --color-warm-900: #2d2926;
+
+  --color-accent-50:  #f7f0ec;
+  --color-accent-100: #f0e4db;
+  --color-accent-500: #a07060;
+  --color-accent-600: #8a5e50;
+
+  --font-prose: Georgia, 'Times New Roman', serif;
+}
