@@ -1,5 +1,10 @@
 import { motion } from "framer-motion";
-import { FaRegFolder, FaThumbtack, FaTrash } from "react-icons/fa";
+import {
+  FaChevronLeft,
+  FaRegFolder,
+  FaThumbtack,
+  FaTrash,
+} from "react-icons/fa";
 import { MdNotes } from "react-icons/md";
 import type { Entry, PinnedEntry, SelectedNote } from "../types";
 
@@ -40,24 +45,27 @@ export function Sidebar({
   onUnpinPath,
   onNavigateToPinned,
 }: Props) {
-  const pinnedList = [...pinnedEntries].sort((a, b) => a.path.localeCompare(b.path));
+  const pinnedList = [...pinnedEntries].sort((a, b) =>
+    a.path.localeCompare(b.path),
+  );
 
   return (
     <motion.div
       animate={{ width: open ? 260 : 0 }}
       transition={{ duration: 0.2 }}
-      className="overflow-hidden border-r border-neutral-200 bg-neutral-50"
+      className="overflow-hidden border-r border-warm-200 bg-warm-100"
     >
       <div className="p-6 space-y-2">
-
         {pinnedList.length > 0 && (
           <div className="mb-4">
-            <div className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2">
+            <div className="text-[10.5px] font-bold text-warm-400 uppercase tracking-[0.1em] mb-2">
               Pinned
             </div>
             <div className="space-y-0.5">
               {pinnedList.map((pin) => {
-                const name = pin.path.split("/").filter(Boolean).pop() ?? pin.path;
+                const rawName =
+                  pin.path.split("/").filter(Boolean).pop() ?? pin.path;
+                const name = rawName.replace(/\.md$/, "");
                 const isSelectedNote =
                   !pin.is_dir &&
                   selectedNote &&
@@ -65,10 +73,10 @@ export function Sidebar({
                 return (
                   <div
                     key={pin.path}
-                    className={`group flex items-center gap-2 rounded hover:bg-amber-50/80 py-0.5 ${
+                    className={`group flex items-center gap-2 rounded-md hover:bg-black/[0.04] py-1 ${
                       isSelectedNote
-                        ? "text-amber-950 font-medium"
-                        : "text-blue-900/90 hover:text-amber-900"
+                        ? "text-accent-500 bg-accent-500/10"
+                        : "text-warm-600 hover:text-warm-900"
                     }`}
                   >
                     <div
@@ -88,7 +96,7 @@ export function Sidebar({
                         e.stopPropagation();
                         onUnpinPath(pin.path);
                       }}
-                      className="cursor-pointer p-1 rounded transition flex-shrink-0 opacity-0 group-hover:opacity-100 text-amber-600 hover:bg-amber-50"
+                      className="cursor-pointer p-1 rounded transition flex-shrink-0 opacity-0 group-hover:opacity-100 text-accent-500 hover:bg-accent-50"
                       title="Unpin"
                       aria-label="Unpin"
                     >
@@ -106,7 +114,7 @@ export function Sidebar({
             type="button"
             onClick={onAddFolder}
             disabled={!currentPath}
-            className="text-xs px-2 py-1 rounded border border-neutral-200 bg-white hover:bg-neutral-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-md text-[13px] text-warm-500 hover:bg-black/[0.04] transition text-left"
           >
             + Folder
           </button>
@@ -114,26 +122,31 @@ export function Sidebar({
             type="button"
             onClick={onAddNote}
             disabled={!currentPath}
-            className="text-xs px-2 py-1 rounded border border-neutral-200 bg-white hover:bg-neutral-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-md text-[13px] text-warm-500 hover:bg-black/[0.04] transition text-left"
           >
             + Note
           </button>
         </div>
 
-        {currentPath && (
+        {/* {currentPath && (
           <div className="text-xs text-neutral-400 mb-4 break-all">
             {currentPath}
           </div>
-        )}
+        )} */}
 
-        {canGoBack && (
+        {canGoBack ? (
           <div
             onClick={onBack}
-            className="text-neutral-400 cursor-pointer mb-4 hover:text-neutral-800 transition"
+            className="flex items-center gap-1.5 text-[12px] text-warm-500 opacity-55 hover:opacity-85 cursor-pointer mb-2 transition px-1"
           >
-            ← Back
+            <FaChevronLeft className="w-3 h-3" />
+            <span>{currentPath?.split("/").pop()}</span>
           </div>
-        )}
+        ) : currentPath ? (
+          <div className="text-[10.5px] font-bold text-warm-400 uppercase tracking-[0.1em] mb-1 mt-2">
+            Files
+          </div>
+        ) : null}
 
         {files.map((file) => {
           const fullPath = currentPath ? `${currentPath}/${file.name}` : "";
@@ -150,16 +163,22 @@ export function Sidebar({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.15 }}
-              className="group flex items-center gap-2 rounded hover:bg-neutral-100/80"
+              className="group flex items-center gap-2 rounded hover:bg-black/[0.04] rounded-md"
             >
               <div
-                onClick={() => file.is_dir ? onOpenFolder(file.name) : onSelectNote(file)}
+                onClick={() =>
+                  file.is_dir ? onOpenFolder(file.name) : onSelectNote(file)
+                }
                 className={`flex-1 flex items-center gap-2 min-w-0 py-0.5 cursor-pointer ${
-                  isSelected ? "text-neutral-900 font-medium" : "text-neutral-600"
-                } hover:text-neutral-900 transition`}
+                  isSelected
+                    ? "text-accent-500 font-medium bg-accent-500/10 rounded-md"
+                    : "text-warm-600"
+                } hover:text-warm-900 transition`}
               >
                 {file.is_dir ? <FaRegFolder /> : <MdNotes />}{" "}
-                <span className="truncate">{file.name}</span>
+                <span className="truncate">
+                  {file.name.replace(/\.md$/, "")}
+                </span>
               </div>
               <button
                 type="button"
@@ -169,8 +188,8 @@ export function Sidebar({
                 }}
                 className={`cursor-pointer p-1 rounded transition flex-shrink-0 ${
                   isPinned
-                    ? "opacity-100 text-amber-600 hover:bg-amber-50"
-                    : "opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-amber-600 hover:bg-amber-50/50"
+                    ? "opacity-100 text-accent-500 hover:bg-accent-50"
+                    : "opacity-0 group-hover:opacity-100 text-warm-400 hover:text-accent-500 hover:bg-accent-50"
                 }`}
                 title={isPinned ? "Unpin" : "Pin to top"}
                 aria-label={isPinned ? "Unpin" : "Pin to top"}
@@ -184,7 +203,9 @@ export function Sidebar({
                   onDeleteEntry(file);
                 }}
                 className="cursor-pointer opacity-0 group-hover:opacity-100 p-1 rounded text-neutral-400 hover:text-red-400 hover:bg-red-50 transition flex-shrink-0"
-                title={file.is_dir ? "Move folder to trash" : "Move note to trash"}
+                title={
+                  file.is_dir ? "Move folder to trash" : "Move note to trash"
+                }
                 aria-label="Move to trash"
               >
                 <FaTrash className="w-3.5 h-3.5" />
