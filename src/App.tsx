@@ -16,6 +16,15 @@ export default function App() {
     window.alert("Could not load or save note. " + msg);
   }, []);
 
+  async function handleRename(newName: string) {
+    if (!fs.selectedNote) return;
+    try {
+      await fs.renameNote(fs.selectedNote.name, newName);
+    } catch (err) {
+      window.alert("Could not rename note. " + String(err));
+    }
+  }
+
   useEffect(() => {
     fs.init();
     pins.loadPinned();
@@ -59,6 +68,7 @@ export default function App() {
               key={`${fs.selectedNote.base}/${fs.selectedNote.name}`}
               note={fs.selectedNote}
               onError={handleNoteEditorError}
+              onRename={handleRename}
             />
           ) : (
             <NoteEditorPlaceholder />

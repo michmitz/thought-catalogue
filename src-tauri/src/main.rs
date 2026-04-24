@@ -189,6 +189,19 @@ fn write_note(base: String, name: String, content: String) -> Result<(), String>
 }
 
 #[tauri::command]
+fn rename_note(base: String, old_name: String, new_name: String) -> Result<(), String> {
+    validate_note_filename(&old_name)?;
+    validate_note_filename(&new_name)?;
+    let base_path = PathBuf::from(&base);
+    let old_path = base_path.join(old_name.trim());
+    let new_path = base_path.join(new_name.trim());
+    if new_path.exists() {
+        return Err("A file with that name already exists.".into());
+    }
+    fs::rename(&old_path, &new_path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn move_to_trash(base: String, name: String) -> Result<(), String> {
     let path = PathBuf::from(&base).join(name);
     trash::delete(&path).map_err(|e| e.to_string())
@@ -196,7 +209,7 @@ fn move_to_trash(base: String, name: String) -> Result<(), String> {
 
 fn main() {
     tauri::Builder::default()
-    .plugin(tauri_plugin_dialog::init()) 
+    .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             choose_folder,
             get_saved_folder,
@@ -207,6 +220,7 @@ fn main() {
             create_note,
             read_note,
             write_note,
+            rename_note,
             move_to_trash,
         ])
         .run(tauri::generate_context!())

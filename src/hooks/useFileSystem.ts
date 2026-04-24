@@ -134,6 +134,13 @@ export function useFileSystem() {
     setPromptError(null);
   }
 
+  async function renameNote(oldName: string, newName: string): Promise<void> {
+    if (!currentPath) return;
+    await invoke("rename_note", { base: currentPath, oldName, newName });
+    await refreshFiles();
+    setSelectedNote({ base: currentPath, name: newName });
+  }
+
   async function handleDeleteEntry(entry: Entry) {
     if (!currentPath) return;
     try {
@@ -170,5 +177,6 @@ export function useFileSystem() {
     handlePromptConfirm,
     handlePromptCancel,
     handleDeleteEntry,
+    renameNote,
   };
 }
