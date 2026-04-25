@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { EntryNamePromptModal } from "./components/EntryNamePromptModal";
 import { NoteEditor, NoteEditorPlaceholder } from "./components/NoteEditor";
 import { Sidebar } from "./components/Sidebar";
@@ -25,9 +25,26 @@ export default function App() {
     }
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fs.init();
     pins.loadPinned();
+  }, []);
+
+  const handleAddNoteRef = useRef(fs.handleAddNote);
+  useEffect(() => {
+    handleAddNoteRef.current = fs.handleAddNote;
+  });
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.metaKey && e.key === "n") {
+        e.preventDefault();
+        handleAddNoteRef.current();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
   return (
@@ -35,7 +52,7 @@ export default function App() {
       <EntryNamePromptModal
         key={fs.promptMode ?? "closed"}
         mode={fs.promptMode}
-        defaultName={fs.promptMode === "note" ? "new-note.md" : ""}
+        defaultName=""
         error={fs.promptError}
         onConfirm={fs.handlePromptConfirm}
         onCancel={fs.handlePromptCancel}

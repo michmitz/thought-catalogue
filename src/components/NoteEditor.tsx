@@ -1,6 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+const REMARK_PLUGINS = [remarkGfm];
 import type { SelectedNote } from "../types";
 
 function EyeIcon() {
@@ -69,7 +72,7 @@ const FORMAT_BUTTONS = [
   {
     label: "[X]",
     title: "Task",
-    prefix: "- [ ] ",
+    prefix: "- [ ]",
     suffix: "",
     cls: "font-mono text-[11px]",
   },
@@ -279,7 +282,7 @@ export function NoteEditor({ note, onError, onRename }: Props) {
       <div className="flex-1 overflow-y-auto">
         {previewMode ? (
           <div className="prose-warm px-16 py-9 max-w-[680px]">
-            <ReactMarkdown>{content}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={REMARK_PLUGINS}>{content}</ReactMarkdown>
           </div>
         ) : (
           <textarea
