@@ -49,7 +49,7 @@ export function EntryNamePromptModal({ mode, defaultName, error, onConfirm, onCa
             if (e.key === "Escape") onCancel();
           }}
           className="w-full px-3 py-2 border border-neutral-200 rounded text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300"
-          placeholder={mode === "note" ? "e.g. my-note.md" : "e.g. My Folder"}
+          placeholder={mode === "note" ? "e.g. my-note" : "e.g. My Folder"}
         />
         {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
         <div className="flex justify-end gap-2 mt-4">

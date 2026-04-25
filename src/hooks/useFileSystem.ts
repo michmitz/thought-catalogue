@@ -1,7 +1,13 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useState } from "react";
-import { type Entry, type EntryPromptMode, getInvokeErrorMessage, type PinnedEntry, type SelectedNote } from "../types";
+import {
+  type Entry,
+  type EntryPromptMode,
+  getInvokeErrorMessage,
+  type PinnedEntry,
+  type SelectedNote,
+} from "../types";
 
 export function useFileSystem() {
   const [files, setFiles] = useState<Entry[]>([]);
@@ -10,7 +16,8 @@ export function useFileSystem() {
   const [promptError, setPromptError] = useState<string | null>(null);
   const [selectedNote, setSelectedNote] = useState<SelectedNote | null>(null);
 
-  const currentPath = pathStack.length > 0 ? pathStack[pathStack.length - 1] : null;
+  const currentPath =
+    pathStack.length > 0 ? pathStack[pathStack.length - 1] : null;
   const canGoBack = pathStack.length > 1;
 
   async function init() {
@@ -26,7 +33,10 @@ export function useFileSystem() {
 
     if (saved) {
       setPathStack([saved]);
-      const contents = await invoke<Entry[]>("read_folder", { base: saved, child: null });
+      const contents = await invoke<Entry[]>("read_folder", {
+        base: saved,
+        child: null,
+      });
       setFiles(contents);
     }
   }
@@ -34,13 +44,19 @@ export function useFileSystem() {
   async function refreshFiles(stack: string[] = pathStack) {
     const path = stack.length > 0 ? stack[stack.length - 1] : null;
     if (!path) return;
-    const contents = await invoke<Entry[]>("read_folder", { base: path, child: null });
+    const contents = await invoke<Entry[]>("read_folder", {
+      base: path,
+      child: null,
+    });
     setFiles(contents);
   }
 
   async function openFolder(name: string) {
     if (!currentPath) return;
-    const contents = await invoke<Entry[]>("read_folder", { base: currentPath, child: name });
+    const contents = await invoke<Entry[]>("read_folder", {
+      base: currentPath,
+      child: name,
+    });
     const newPath = `${currentPath}/${name}`;
     setSelectedNote(null);
     setPathStack([...pathStack, newPath]);
@@ -51,7 +67,10 @@ export function useFileSystem() {
     if (pathStack.length <= 1) return;
     const newStack = pathStack.slice(0, -1);
     const parentPath = newStack[newStack.length - 1];
-    const contents = await invoke<Entry[]>("read_folder", { base: parentPath, child: null });
+    const contents = await invoke<Entry[]>("read_folder", {
+      base: parentPath,
+      child: null,
+    });
     setSelectedNote(null);
     setPathStack(newStack);
     setFiles(contents);
@@ -73,7 +92,10 @@ export function useFileSystem() {
     for (let i = 0; i < segments.length; i++) {
       newStack.push(`${newStack[newStack.length - 1]}/${segments[i]}`);
     }
-    const contents = await invoke<Entry[]>("read_folder", { base: targetDir, child: null });
+    const contents = await invoke<Entry[]>("read_folder", {
+      base: targetDir,
+      child: null,
+    });
     setPathStack(newStack);
     setFiles(contents);
     if (!pin.is_dir) {
@@ -111,16 +133,18 @@ export function useFileSystem() {
       setPromptError("Name cannot be empty.");
       return;
     }
-    if (hasEntry(name)) {
+    const finalName =
+      promptMode === "note" && !name.endsWith(".md") ? `${name}.md` : name;
+    if (hasEntry(finalName)) {
       setPromptError("A folder or note with that name already exists.");
       return;
     }
     setPromptError(null);
     try {
       if (promptMode === "folder") {
-        await invoke("create_folder", { base: currentPath, name });
+        await invoke("create_folder", { base: currentPath, name: finalName });
       } else {
-        await invoke("create_note", { base: currentPath, name });
+        await invoke("create_note", { base: currentPath, name: finalName });
       }
       await refreshFiles();
       setPromptMode(null);
