@@ -2,48 +2,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { EyeIcon, EyeOffIcon, NoteIcon } from "./icons";
 
 const REMARK_PLUGINS = [remarkGfm];
 import type { SelectedNote } from "../types";
-
-function EyeIcon() {
-  return (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 9a3 3 0 100 6 3 3 0 000-6z" />
-    </svg>
-  );
-}
-
-function EyeOffIcon() {
-  return (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
-      <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
-      <path d="M14.12 14.12a3 3 0 11-4.24-4.24" />
-      <path d="M1 1l22 22" />
-    </svg>
-  );
-}
 
 type Props = {
   note: SelectedNote;
@@ -282,7 +244,9 @@ export function NoteEditor({ note, onError, onRename }: Props) {
       <div className="flex-1 overflow-y-auto">
         {previewMode ? (
           <div className="prose-warm px-16 py-9 max-w-[680px]">
-            <ReactMarkdown remarkPlugins={REMARK_PLUGINS}>{content}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={REMARK_PLUGINS}>
+              {content}
+            </ReactMarkdown>
           </div>
         ) : (
           <textarea
@@ -303,20 +267,7 @@ export function NoteEditor({ note, onError, onRename }: Props) {
 export function NoteEditorPlaceholder() {
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-3 text-warm-500 opacity-30">
-      <svg
-        width="36"
-        height="36"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
-        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
-      </svg>
+      <NoteIcon size={36} strokeWidth={1.2} />
       <span className="text-[14px]">Select a note to open it</span>
       <span className="text-[12px] opacity-60">or create a new one</span>
     </div>

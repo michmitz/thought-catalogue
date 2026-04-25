@@ -1,11 +1,14 @@
 import { motion } from "framer-motion";
 import {
-  FaChevronLeft,
-  FaRegFolder,
-  FaThumbtack,
-  FaTrash,
-} from "react-icons/fa";
-import { MdNotes } from "react-icons/md";
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  FolderIcon,
+  FolderPlusIcon,
+  NoteIcon,
+  PlusIcon,
+  StarIcon,
+  TrashIcon,
+} from "./icons";
 import type { Entry, PinnedEntry, SelectedNote } from "../types";
 
 type Props = {
@@ -53,12 +56,15 @@ export function Sidebar({
     <motion.div
       animate={{ width: open ? 260 : 0 }}
       transition={{ duration: 0.2 }}
-      className="overflow-hidden border-r border-warm-200 bg-warm-100"
+      className="overflow-hidden border-r border-warm-200 bg-warm-100 flex-shrink-0"
     >
-      <div className="p-6 space-y-2">
+      <div
+        className="flex flex-col h-full overflow-hidden"
+        style={{ width: 260 }}
+      >
         {pinnedList.length > 0 && (
-          <div className="mb-4">
-            <div className="text-[10.5px] font-bold text-warm-400 uppercase tracking-[0.1em] mb-2">
+          <>
+            <div className="text-[10.5px] font-bold text-warm-400 uppercase tracking-[0.1em] pt-[18px] px-4 pb-1.5">
               Pinned
             </div>
             <div className="space-y-0.5">
@@ -73,7 +79,7 @@ export function Sidebar({
                 return (
                   <div
                     key={pin.path}
-                    className={`group flex items-center gap-2 rounded-md hover:bg-black/[0.04] py-1 ${
+                    className={`group flex items-center gap-2 mx-2 my-px rounded-md px-2.5 py-1.5 hover:bg-black/[0.04] ${
                       isSelectedNote
                         ? "text-accent-500 bg-accent-500/10"
                         : "text-warm-600 hover:text-warm-900"
@@ -83,12 +89,8 @@ export function Sidebar({
                       onClick={() => onNavigateToPinned(pin)}
                       className="flex-1 flex items-center gap-2 min-w-0 cursor-pointer"
                     >
-                      {pin.is_dir ? (
-                        <FaRegFolder className="w-4 h-4 flex-shrink-0" />
-                      ) : (
-                        <MdNotes className="w-4 h-4 flex-shrink-0" />
-                      )}
-                      <span className="truncate text-sm">{name}</span>
+                      {pin.is_dir ? <FolderIcon /> : <NoteIcon />}
+                      <span className="truncate text-[13.5px]">{name}</span>
                     </div>
                     <button
                       type="button"
@@ -100,119 +102,119 @@ export function Sidebar({
                       title="Unpin"
                       aria-label="Unpin"
                     >
-                      <FaThumbtack className="w-3.5 h-3.5" />
+                      <StarIcon filled={true} />
                     </button>
                   </div>
                 );
               })}
             </div>
-          </div>
+            <div className="h-px bg-warm-200 mx-4 my-1.5" />
+          </>
         )}
-
-        <div className="flex gap-2 mb-4">
-          <button
-            type="button"
-            onClick={onAddFolder}
-            disabled={!currentPath}
-            className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-md text-[13px] text-warm-500 hover:bg-black/[0.04] transition text-left"
-          >
-            + Folder
-          </button>
-          <button
-            type="button"
-            onClick={onAddNote}
-            disabled={!currentPath}
-            className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-md text-[13px] text-warm-500 hover:bg-black/[0.04] transition text-left"
-          >
-            + Note
-          </button>
-        </div>
-
-        {/* {currentPath && (
-          <div className="text-xs text-neutral-400 mb-4 break-all">
-            {currentPath}
-          </div>
-        )} */}
 
         {canGoBack ? (
           <div
             onClick={onBack}
-            className="flex items-center gap-1.5 text-[12px] text-warm-500 opacity-55 hover:opacity-85 cursor-pointer mb-2 transition px-1"
+            className="flex items-center gap-1.5 text-[12px] text-warm-500 opacity-55 hover:opacity-85 cursor-pointer transition px-4 pt-3 pb-1"
           >
-            <FaChevronLeft className="w-3 h-3" />
+            <ChevronLeftIcon />
             <span>{currentPath?.split("/").pop()}</span>
           </div>
         ) : currentPath ? (
-          <div className="text-[10.5px] font-bold text-warm-400 uppercase tracking-[0.1em] mb-1 mt-2">
+          <div className="text-[10.5px] font-bold text-warm-400 uppercase tracking-[0.1em] pt-[18px] px-4 pb-1.5">
             Files
           </div>
         ) : null}
 
-        {files.map((file) => {
-          const fullPath = currentPath ? `${currentPath}/${file.name}` : "";
-          const isPinned = fullPath ? pinnedPaths.has(fullPath) : false;
-          if (isPinned) return null;
-          const isSelected =
-            !file.is_dir &&
-            selectedNote &&
-            currentPath === selectedNote.base &&
-            selectedNote.name === file.name;
-          return (
-            <motion.div
-              key={file.name}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.15 }}
-              className="group flex items-center gap-2 rounded hover:bg-black/[0.04] rounded-md"
-            >
-              <div
-                onClick={() =>
-                  file.is_dir ? onOpenFolder(file.name) : onSelectNote(file)
-                }
-                className={`flex-1 flex items-center gap-2 min-w-0 py-0.5 cursor-pointer ${
+        <div className="flex-1 overflow-y-auto">
+          {files.map((file) => {
+            const fullPath = currentPath ? `${currentPath}/${file.name}` : "";
+            const isPinned = fullPath ? pinnedPaths.has(fullPath) : false;
+            if (isPinned) return null;
+            const isSelected =
+              !file.is_dir &&
+              selectedNote &&
+              currentPath === selectedNote.base &&
+              selectedNote.name === file.name;
+            return (
+              <motion.div
+                key={file.name}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.15 }}
+                className={`group flex items-center gap-2 mx-2 my-px rounded-md px-2.5 py-1.5 hover:bg-black/[0.04] transition ${
                   isSelected
-                    ? "text-accent-500 font-medium bg-accent-500/10 rounded-md"
-                    : "text-warm-600"
-                } hover:text-warm-900 transition`}
-              >
-                {file.is_dir ? <FaRegFolder /> : <MdNotes />}{" "}
-                <span className="truncate">
-                  {file.name.replace(/\.md$/, "")}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onTogglePin(file);
-                }}
-                className={`cursor-pointer p-1 rounded transition flex-shrink-0 ${
-                  isPinned
-                    ? "opacity-100 text-accent-500 hover:bg-accent-50"
-                    : "opacity-0 group-hover:opacity-100 text-warm-400 hover:text-accent-500 hover:bg-accent-50"
+                    ? "text-accent-500 bg-accent-500/10"
+                    : "text-warm-600 hover:text-warm-900"
                 }`}
-                title={isPinned ? "Unpin" : "Pin to top"}
-                aria-label={isPinned ? "Unpin" : "Pin to top"}
               >
-                <FaThumbtack className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteEntry(file);
-                }}
-                className="cursor-pointer opacity-0 group-hover:opacity-100 p-1 rounded text-neutral-400 hover:text-red-400 hover:bg-red-50 transition flex-shrink-0"
-                title={
-                  file.is_dir ? "Move folder to trash" : "Move note to trash"
-                }
-                aria-label="Move to trash"
-              >
-                <FaTrash className="w-3.5 h-3.5" />
-              </button>
-            </motion.div>
-          );
-        })}
+                <div
+                  onClick={() =>
+                    file.is_dir ? onOpenFolder(file.name) : onSelectNote(file)
+                  }
+                  className="flex-1 flex items-center gap-2 min-w-0 cursor-pointer"
+                >
+                  {file.is_dir ? <FolderIcon /> : <NoteIcon />}
+                  <span className="truncate text-[13.5px]">
+                    {file.name.replace(/\.md$/, "")}
+                  </span>
+                  {file.is_dir && <ChevronRightIcon />}
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTogglePin(file);
+                  }}
+                  className={`cursor-pointer p-1 rounded transition flex-shrink-0 ${
+                    isPinned
+                      ? "opacity-100 text-accent-500 hover:bg-accent-50"
+                      : "opacity-0 group-hover:opacity-100 text-warm-400 hover:text-accent-500 hover:bg-accent-50"
+                  }`}
+                  title={isPinned ? "Unpin" : "Pin to top"}
+                  aria-label={isPinned ? "Unpin" : "Pin to top"}
+                >
+                  <StarIcon filled={isPinned} />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteEntry(file);
+                  }}
+                  className="cursor-pointer opacity-0 group-hover:opacity-100 p-1 rounded text-warm-400 hover:text-red-400 hover:bg-red-50 transition flex-shrink-0"
+                  title={
+                    file.is_dir ? "Move folder to trash" : "Move note to trash"
+                  }
+                  aria-label="Move to trash"
+                >
+                  <TrashIcon />
+                </button>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        <div className="flex flex-col gap-0.5 p-2">
+          <button
+            type="button"
+            onClick={onAddNote}
+            disabled={!currentPath}
+            className="flex items-center gap-2 w-full px-2.5 py-[7px] rounded-md text-[13px] text-warm-500 hover:bg-black/[0.04] transition text-left disabled:opacity-30 disabled:pointer-events-none"
+          >
+            <PlusIcon />
+            <span>New note</span>
+          </button>
+          <button
+            type="button"
+            onClick={onAddFolder}
+            disabled={!currentPath}
+            className="flex items-center gap-2 w-full px-2.5 py-[7px] rounded-md text-[13px] text-warm-500 hover:bg-black/[0.04] transition text-left disabled:opacity-30 disabled:pointer-events-none"
+          >
+            <FolderPlusIcon />
+            <span>New folder</span>
+          </button>
+        </div>
       </div>
     </motion.div>
   );

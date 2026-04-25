@@ -1,26 +1,10 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { SidebarIcon } from "./icons";
 
 type Props = {
   sidebarOpen: boolean;
   setSidebarOpen: (value: boolean) => void;
 };
-
-function SidebarIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      width="15"
-      height="15"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    >
-      <path d="M3 9h18M9 21V9m-6 0V5a2 2 0 012-2h14a2 2 0 012 2v4" />
-    </svg>
-  );
-}
 
 const win = getCurrentWindow();
 
