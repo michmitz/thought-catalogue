@@ -209,6 +209,7 @@ fn move_to_trash(base: String, name: String) -> Result<(), String> {
 
 fn main() {
     tauri::Builder::default()
+    .plugin(tauri_plugin_fs::init())
     .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             choose_folder,
