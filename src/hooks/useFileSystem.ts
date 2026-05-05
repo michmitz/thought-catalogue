@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { useState } from "react";
+import { watch } from "@tauri-apps/plugin-fs";
+import { useRef, useState } from "react";
 import {
   type Entry,
   type EntryPromptMode,
@@ -9,6 +10,13 @@ import {
   type SelectedNote,
 } from "../types";
 
+function sortEntries(entries: Entry[]): Entry[] {
+  return [...entries].sort((a, b) => {
+    if (a.is_dir !== b.is_dir) return a.is_dir ? -1 : 1;
+    return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+  });
+}
+
 export function useFileSystem() {
   const [files, setFiles] = useState<Entry[]>([]);
   const [pathStack, setPathStack] = useState<string[]>([]);
@@ -16,9 +24,26 @@ export function useFileSystem() {
   const [promptError, setPromptError] = useState<string | null>(null);
   const [selectedNote, setSelectedNote] = useState<SelectedNote | null>(null);
 
+  const pathStackRef = useRef<string[]>([]);
+  const unwatchRef = useRef<(() => void) | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const currentPath =
     pathStack.length > 0 ? pathStack[pathStack.length - 1] : null;
   const canGoBack = pathStack.length > 1;
+
+  function updatePathStack(newStack: string[]) {
+    pathStackRef.current = newStack;
+    setPathStack(newStack);
+  }
+
+  function scheduleRefresh() {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(
+      () => refreshFiles(pathStackRef.current),
+      300,
+    );
+  }
 
   async function init() {
     let saved = await invoke<string | null>("get_saved_folder");
@@ -32,12 +57,16 @@ export function useFileSystem() {
     }
 
     if (saved) {
-      setPathStack([saved]);
+      updatePathStack([saved]);
       const contents = await invoke<Entry[]>("read_folder", {
         base: saved,
         child: null,
       });
-      setFiles(contents);
+      setFiles(sortEntries(contents));
+      if (unwatchRef.current) unwatchRef.current();
+      unwatchRef.current = await watch(saved, scheduleRefresh, {
+        recursive: true,
+      });
     }
   }
 
@@ -48,7 +77,7 @@ export function useFileSystem() {
       base: path,
       child: null,
     });
-    setFiles(contents);
+    setFiles(sortEntries(contents));
   }
 
   async function openFolder(name: string) {
@@ -59,8 +88,8 @@ export function useFileSystem() {
     });
     const newPath = `${currentPath}/${name}`;
     setSelectedNote(null);
-    setPathStack([...pathStack, newPath]);
-    setFiles(contents);
+    updatePathStack([...pathStack, newPath]);
+    setFiles(sortEntries(contents));
   }
 
   async function goBack() {
@@ -72,8 +101,8 @@ export function useFileSystem() {
       child: null,
     });
     setSelectedNote(null);
-    setPathStack(newStack);
-    setFiles(contents);
+    updatePathStack(newStack);
+    setFiles(sortEntries(contents));
   }
 
   async function navigateToPinned(pin: PinnedEntry) {
@@ -96,8 +125,8 @@ export function useFileSystem() {
       base: targetDir,
       child: null,
     });
-    setPathStack(newStack);
-    setFiles(contents);
+    updatePathStack(newStack);
+    setFiles(sortEntries(contents));
     if (!pin.is_dir) {
       const fileName = fullPath.split("/").filter(Boolean).pop();
       setSelectedNote(fileName ? { base: targetDir, name: fileName } : null);
