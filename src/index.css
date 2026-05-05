@@ -1,27 +1,56 @@
 @import "tailwindcss";
 
+/* Default theme tokens (Paper & Ink) — also fallback */
 @theme {
-  --color-warm-50:  #faf8f5;
-  --color-warm-100: #f3f0ec;
-  --color-warm-200: #e8e3dc;
-  --color-warm-300: #d4ccc3;
-  --color-warm-400: #b5ada6;
-  --color-warm-500: #8a817a;
-  --color-warm-600: #5c534d;
-  --color-warm-900: #2d2926;
-
-  --color-accent-50:  #f7f0ec;
-  --color-accent-100: #f0e4db;
-  --color-accent-500: #a07060;
-  --color-accent-600: #8a5e50;
-
-  --font-prose: Georgia, 'Times New Roman', serif;
+  --color-bg: #f4f1ea;
+  --color-sidebar: #ebe7dc;
+  --color-border: #d8d2c2;
+  --color-text: #1a1814;
+  --color-text-muted: #6b6354;
+  --color-text-faint: #a39b89;
+  --color-accent: #5b4a35;
+  --color-accent-bg: rgba(91,74,53,0.10);
+  --color-hover: rgba(0,0,0,0.04);
+  --font-body: 'Source Serif 4', Georgia, serif;
+  --font-ui: 'Source Serif 4', Georgia, serif;
+  --radius: 3px;
 }
 
+/* Theme overrides — applied via data-theme attribute on <html> */
+[data-theme="garden"] {
+  --color-bg: #f5f3ec; --color-sidebar: #e9ebe2; --color-border: #d4d8c8;
+  --color-text: #2d3a2f; --color-text-muted: #6e7a6a; --color-text-faint: #a8b09e;
+  --color-accent: #a86b6b; --color-accent-bg: rgba(168,107,107,0.12);
+  --color-hover: rgba(58,74,60,0.05);
+  --font-body: 'Inter', -apple-system, sans-serif;
+  --font-ui: 'Inter', -apple-system, sans-serif;
+  --radius: 8px;
+}
+[data-theme="linen"] {
+  --color-bg: #eeece8; --color-sidebar: #e3e0d9; --color-border: #cdc9c0;
+  --color-text: #3d4148; --color-text-muted: #7a7d83; --color-text-faint: #aeb0b3;
+  --color-accent: #6d7178; --color-accent-bg: rgba(109,113,120,0.14);
+  --color-hover: rgba(61,65,72,0.05);
+  --font-body: 'Roboto Slab', Georgia, serif;
+  --font-ui: 'Inter', -apple-system, sans-serif;
+  --radius: 4px;
+}
+[data-theme="mono"] {
+  --color-bg: #1a1a1a; --color-sidebar: #222222; --color-border: #2e2e2e;
+  --color-text: #e8e8e8; --color-text-muted: #8a8a8a; --color-text-faint: #5a5a5a;
+  --color-accent: #5fd4d6; --color-accent-bg: rgba(95,212,214,0.14);
+  --color-hover: rgba(255,255,255,0.04);
+  --font-body: 'JetBrains Mono', Menlo, monospace;
+  --font-ui: 'JetBrains Mono', Menlo, monospace;
+  --radius: 4px;
+}
+
+html, body { background: var(--color-bg); color: var(--color-text); font-family: var(--font-ui); }
+
 .prose-warm {
-  font-family: Georgia, serif;
+  font-family: var(--font-body);
   font-size: 17px;
-  color: #2d2926;
+  color: var(--color-text);
   line-height: 1.85;
 }
 .prose-warm h1 { font-size: 1.7em; font-weight: 600; margin: 0 0 0.6em; }
@@ -33,11 +62,11 @@
 .prose-warm li { margin-bottom: 0.25em; }
 .prose-warm ul.contains-task-list { list-style-type: none; margin-left: 0; }
 .prose-warm li.task-list-item { list-style: none; }
-.prose-warm input[type="checkbox"] { margin-right: 0.4em; vertical-align: middle; accent-color: #a07060; }
-.prose-warm blockquote { border-left: 2.5px solid #a07060; padding-left: 1em; opacity: 0.6; font-style: italic; margin: 1em 0; }
-.prose-warm code { font-family: Menlo, monospace; font-size: 0.875em; background: #f0e4db; padding: 0.1em 0.35em; border-radius: 3px; }
-.prose-warm pre { background: #f0e4db; padding: 1em; border-radius: 6px; overflow-x: auto; margin-bottom: 1em; }
+.prose-warm input[type="checkbox"] { margin-right: 0.4em; vertical-align: middle; accent-color: var(--color-accent); }
+.prose-warm blockquote { border-left: 2.5px solid var(--color-accent); padding-left: 1em; opacity: 0.6; font-style: italic; margin: 1em 0; }
+.prose-warm code { font-family: Menlo, monospace; font-size: 0.875em; background: var(--color-accent-bg); padding: 0.1em 0.35em; border-radius: 3px; }
+.prose-warm pre { background: var(--color-accent-bg); padding: 1em; border-radius: 6px; overflow-x: auto; margin-bottom: 1em; }
 .prose-warm pre code { background: none; padding: 0; }
-.prose-warm hr { border: none; border-top: 1px solid #e8e3dc; margin: 1.5em 0; }
+.prose-warm hr { border: none; border-top: 1px solid var(--color-border); margin: 1.5em 0; }
 .prose-warm strong { font-weight: 600; }
-.prose-warm a { text-decoration: underline; text-underline-offset: 2px; color: #a07060; }
+.prose-warm a { text-decoration: underline; text-underline-offset: 2px; color: var(--color-accent); }
