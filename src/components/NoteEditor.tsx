@@ -167,7 +167,7 @@ export function NoteEditor({ note, onError, onRename }: Props) {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className="h-11 flex items-center px-5 gap-2.5 flex-shrink-0 border-b border-warm-200">
+      <div className="h-11 flex items-center px-5 gap-2.5 flex-shrink-0 border-b border-border">
         {isRenaming ? (
           <input
             ref={renameInputRef}
@@ -185,7 +185,7 @@ export function NoteEditor({ note, onError, onRename }: Props) {
                 setIsRenaming(false);
               }
             }}
-            className="flex-1 text-[14px] font-medium text-warm-900 bg-transparent border-none outline-none border-b border-warm-400 min-w-0 focus:border-b focus:border-accent-500"
+            className="flex-1 text-[14px] font-medium text-text bg-transparent border-none outline-none border-b border-text-faint min-w-0 focus:border-b focus:border-accent"
             autoFocus
           />
         ) : (
@@ -193,13 +193,13 @@ export function NoteEditor({ note, onError, onRename }: Props) {
             type="button"
             onClick={startRename}
             title="Click to rename"
-            className="flex-1 text-left text-[14px] font-medium text-warm-500 truncate opacity-60 hover:opacity-85 cursor-default bg-transparent border-none"
+            className="flex-1 text-left text-[14px] font-medium text-text-muted truncate opacity-60 hover:opacity-85 cursor-default bg-transparent border-none"
           >
             {note.name.replace(/\.md$/, "")}
           </button>
         )}
         <span
-          className={`text-[12px] text-warm-400 transition-opacity duration-300 ${
+          className={`text-[12px] text-text-faint transition-opacity duration-300 ${
             saveStatus === "idle" ? "opacity-0" : "opacity-35"
           }`}
         >
@@ -215,8 +215,8 @@ export function NoteEditor({ note, onError, onRename }: Props) {
           aria-pressed={previewMode}
           className={`flex items-center justify-center p-[5px_7px] rounded-[5px] transition cursor-default ${
             previewMode
-              ? "opacity-90 text-accent-500"
-              : "opacity-35 text-warm-900 hover:opacity-70 hover:bg-black/[0.06]"
+              ? "opacity-90 text-accent"
+              : "opacity-35 text-text hover:opacity-70 hover:bg-hover"
           }`}
         >
           {previewMode ? <EyeOffIcon /> : <EyeIcon />}
@@ -224,7 +224,7 @@ export function NoteEditor({ note, onError, onRename }: Props) {
       </div>
 
       {!previewMode && (
-        <div className="flex items-center gap-0.5 px-5 h-[38px] border-b border-warm-200 flex-shrink-0">
+        <div className="flex items-center gap-0.5 px-5 h-[38px] border-b border-border flex-shrink-0">
           {FORMAT_BUTTONS.map(({ label, title, prefix, suffix, cls }) => (
             <button
               key={label}
@@ -233,7 +233,7 @@ export function NoteEditor({ note, onError, onRename }: Props) {
               title={title}
               aria-label={title}
               disabled={!readOk}
-              className={`px-2 py-1 rounded text-[13px] font-medium text-warm-900 opacity-35 hover:opacity-75 hover:bg-black/5 transition disabled:pointer-events-none ${cls}`}
+              className={`px-2 py-1 rounded-[var(--radius)] text-[13px] font-medium text-text opacity-35 hover:opacity-75 hover:bg-hover transition disabled:pointer-events-none ${cls}`}
             >
               {label}
             </button>
@@ -254,7 +254,7 @@ export function NoteEditor({ note, onError, onRename }: Props) {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             spellCheck
-            className="block w-full min-h-full resize-none border-none outline-none bg-transparent px-16 py-9 text-warm-900 text-[17px] leading-[1.8] font-prose placeholder:text-warm-400 caret-accent-500 max-w-[680px] disabled:opacity-40"
+            className="block w-full min-h-full resize-none border-none outline-none bg-transparent px-16 py-9 text-text text-[17px] leading-[1.8] font-body placeholder:text-text-faint caret-accent max-w-[680px] disabled:opacity-40"
             placeholder="Start writing…"
             disabled={!loaded || !readOk}
           />
@@ -266,7 +266,7 @@ export function NoteEditor({ note, onError, onRename }: Props) {
 
 export function NoteEditorPlaceholder() {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-3 text-warm-500 opacity-30">
+    <div className="flex-1 flex flex-col items-center justify-center gap-3 text-text-muted opacity-30">
       <NoteIcon size={36} strokeWidth={1.2} />
       <span className="text-[14px]">Select a note to open it</span>
       <span className="text-[12px] opacity-60">or create a new one</span>

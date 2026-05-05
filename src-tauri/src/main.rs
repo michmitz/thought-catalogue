@@ -16,6 +16,8 @@ struct AppConfig {
     folder_path: String,
     #[serde(default)]
     pinned: Vec<PinnedEntry>,
+    #[serde(default)]
+    theme: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -58,12 +60,14 @@ fn read_config(app: &tauri::AppHandle) -> AppConfig {
             return AppConfig {
                 folder_path: legacy.folder_path,
                 pinned,
+                theme: None,
             };
         }
     }
     AppConfig {
         folder_path: String::new(),
         pinned: Vec::new(),
+        theme: None,
     }
 }
 
@@ -205,6 +209,22 @@ fn rename_note(base: String, old_name: String, new_name: String) -> Result<(), S
 fn move_to_trash(base: String, name: String) -> Result<(), String> {
     let path = PathBuf::from(&base).join(name);
     trash::delete(&path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_theme(app: tauri::AppHandle) -> Option<String> {
+    read_config(&app).theme
+}
+
+#[tauri::command]
+fn set_theme(app: tauri::AppHandle, theme: String) -> Result<(), String> {
+    let valid = ["paper", "garden", "linen", "mono"];
+    if !valid.contains(&theme.as_str()) {
+        return Err(format!("Invalid theme: {}", theme));
+    }
+    let mut config = read_config(&app);
+    config.theme = Some(theme);
+    write_config(&app, &config)
 }
 
 fn main() {
