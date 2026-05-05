@@ -1,16 +1,41 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { SidebarIcon } from "./icons";
+import { useEffect, useRef, useState } from "react";
+import { THEMES, type ThemeKey } from "../hooks/useTheme";
+import { CheckIcon, GearIcon, SidebarIcon } from "./icons";
 
 type Props = {
   sidebarOpen: boolean;
   setSidebarOpen: (value: boolean) => void;
+  theme: ThemeKey;
+  setTheme: (t: ThemeKey) => void;
 };
 
 const win = getCurrentWindow();
 
-export function TopBar({ sidebarOpen, setSidebarOpen }: Props) {
+export function TopBar({ sidebarOpen, setSidebarOpen, theme, setTheme }: Props) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [menuOpen]);
+
   return (
-    <div className="h-11 flex items-center px-[18px] border-b border-warm-200 bg-warm-100 flex-shrink-0 relative select-none">
+    <div className="h-11 flex items-center px-[18px] border-b border-border bg-sidebar flex-shrink-0 relative select-none">
       <div className="absolute inset-0" data-tauri-drag-region />
 
       <div
@@ -23,7 +48,7 @@ export function TopBar({ sidebarOpen, setSidebarOpen }: Props) {
           onClick={() => win.close()}
           aria-label="Close window"
           title="Close"
-          className="group w-3 h-3 rounded-full bg-[#ff5f57] shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.15)] hover:brightness-90 transition-[filter] cursor-default flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-500/60"
+          className="group w-3 h-3 rounded-full bg-[#ff5f57] shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.15)] hover:brightness-90 transition-[filter] cursor-default flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-muted/60"
         >
           <span className="opacity-0 group-hover:opacity-100 text-[7px] font-bold leading-none text-black/50 transition-opacity">
             ×
@@ -34,7 +59,7 @@ export function TopBar({ sidebarOpen, setSidebarOpen }: Props) {
           onClick={() => win.minimize()}
           aria-label="Minimize window"
           title="Minimize"
-          className="group w-3 h-3 rounded-full bg-[#febc2e] shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.15)] hover:brightness-90 transition-[filter] cursor-default flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-500/60"
+          className="group w-3 h-3 rounded-full bg-[#febc2e] shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.15)] hover:brightness-90 transition-[filter] cursor-default flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-muted/60"
         >
           <span className="opacity-0 group-hover:opacity-100 text-[7px] font-bold leading-none text-black/50 transition-opacity">
             –
@@ -45,7 +70,7 @@ export function TopBar({ sidebarOpen, setSidebarOpen }: Props) {
           onClick={() => win.toggleMaximize()}
           aria-label="Maximize window"
           title="Maximize"
-          className="group w-3 h-3 rounded-full bg-[#28c840] shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.15)] hover:brightness-90 transition-[filter] cursor-default flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-500/60"
+          className="group w-3 h-3 rounded-full bg-[#28c840] shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.15)] hover:brightness-90 transition-[filter] cursor-default flex items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-muted/60"
         >
           <span className="opacity-0 group-hover:opacity-100 text-[7px] font-bold leading-none text-black/50 transition-opacity">
             +
@@ -53,24 +78,70 @@ export function TopBar({ sidebarOpen, setSidebarOpen }: Props) {
         </button>
       </div>
 
-      {/* Centered title */}
       <span
         aria-hidden="true"
-        className="absolute left-1/2 -translate-x-1/2 text-[13px] text-warm-500 tracking-[0.05em] opacity-45 pointer-events-none"
+        className="absolute left-1/2 -translate-x-1/2 text-[13px] text-text-muted tracking-[0.05em] opacity-45 pointer-events-none"
       >
         Thought Catalogue
       </span>
 
-      <button
-        type="button"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-        aria-pressed={sidebarOpen}
-        title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-        className="ml-auto relative z-10 p-1.5 rounded-md text-warm-900 opacity-40 hover:opacity-70 hover:bg-black/5 transition cursor-default focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warm-500/60"
-      >
-        <SidebarIcon />
-      </button>
+      <div className="ml-auto flex items-center gap-1 relative z-10" ref={menuRef}>
+        <button
+          type="button"
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-label="Theme settings"
+          title="Theme"
+          aria-pressed={menuOpen}
+          className="p-1.5 rounded-[var(--radius)] text-text opacity-40 hover:opacity-80 hover:bg-hover transition cursor-default focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-muted/60"
+        >
+          <GearIcon />
+        </button>
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+          aria-pressed={sidebarOpen}
+          title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+          className="p-1.5 rounded-[var(--radius)] text-text opacity-40 hover:opacity-70 hover:bg-hover transition cursor-default focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-muted/60"
+        >
+          <SidebarIcon />
+        </button>
+
+        {menuOpen && (
+          <div className="absolute right-0 top-9 w-[280px] p-2 rounded-[10px] bg-bg border border-border shadow-xl z-50">
+            <div className="text-[10px] font-bold tracking-[0.1em] uppercase text-text-faint px-2 pt-1.5 pb-1">
+              Theme
+            </div>
+            {THEMES.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => { setTheme(t.key); setMenuOpen(false); }}
+                className={`w-full flex items-center gap-3 p-2.5 rounded-[7px] text-left hover:bg-hover transition cursor-default ${
+                  theme === t.key ? "bg-hover" : ""
+                }`}
+              >
+                <div className="flex gap-[3px] flex-shrink-0">
+                  {t.swatches.map((c, i) => (
+                    <div
+                      key={i}
+                      className="w-3.5 h-[22px] rounded-[3px] border border-black/5"
+                      style={{ background: c }}
+                    />
+                  ))}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-medium text-text">{t.name}</div>
+                  <div className="text-[11px] text-text-muted mt-0.5">{t.desc}</div>
+                </div>
+                {theme === t.key && (
+                  <CheckIcon className="text-accent flex-shrink-0" />
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
