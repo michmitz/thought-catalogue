@@ -56,7 +56,7 @@ export function Sidebar({
     <motion.div
       animate={{ width: open ? 260 : 0 }}
       transition={{ duration: 0.2 }}
-      className="overflow-hidden border-r border-warm-200 bg-warm-100 flex-shrink-0"
+      className="overflow-hidden border-r border-border bg-sidebar flex-shrink-0"
     >
       <div
         className="flex flex-col h-full overflow-hidden"
@@ -64,7 +64,7 @@ export function Sidebar({
       >
         {pinnedList.length > 0 && (
           <>
-            <div className="text-[10.5px] font-bold text-warm-400 uppercase tracking-[0.1em] pt-[18px] px-4 pb-1.5">
+            <div className="text-[10.5px] font-bold text-text-faint uppercase tracking-[0.1em] pt-[18px] px-4 pb-1.5">
               Pinned
             </div>
             <div className="space-y-0.5">
@@ -79,10 +79,10 @@ export function Sidebar({
                 return (
                   <div
                     key={pin.path}
-                    className={`group flex items-center gap-2 mx-2 my-px rounded-md px-2.5 py-1.5 hover:bg-black/[0.04] ${
+                    className={`group flex items-center gap-2 mx-2 my-px rounded-[var(--radius)] px-2.5 py-1.5 hover:bg-hover ${
                       isSelectedNote
-                        ? "text-accent-500 bg-accent-500/10"
-                        : "text-warm-600 hover:text-warm-900"
+                        ? "text-accent bg-accent-bg"
+                        : "text-text-muted hover:text-text"
                     }`}
                   >
                     <div
@@ -98,7 +98,7 @@ export function Sidebar({
                         e.stopPropagation();
                         onUnpinPath(pin.path);
                       }}
-                      className="cursor-pointer p-1 rounded transition flex-shrink-0 opacity-0 group-hover:opacity-100 text-accent-500 hover:bg-accent-50"
+                      className="cursor-pointer p-1 rounded-[var(--radius)] transition flex-shrink-0 opacity-0 group-hover:opacity-100 text-accent hover:bg-accent-bg"
                       title="Unpin"
                       aria-label="Unpin"
                     >
@@ -108,20 +108,20 @@ export function Sidebar({
                 );
               })}
             </div>
-            <div className="h-px bg-warm-200 mx-4 my-1.5" />
+            <div className="h-px bg-border mx-4 my-1.5" />
           </>
         )}
 
         {canGoBack ? (
           <div
             onClick={onBack}
-            className="flex items-center gap-1.5 text-[12px] text-warm-500 opacity-55 hover:opacity-85 cursor-pointer transition px-4 pt-3 pb-1"
+            className="flex items-center gap-1.5 text-[12px] text-text-muted opacity-55 hover:opacity-85 cursor-pointer transition px-4 pt-3 pb-1"
           >
             <ChevronLeftIcon />
             <span>{currentPath?.split("/").pop()}</span>
           </div>
         ) : currentPath ? (
-          <div className="text-[10.5px] font-bold text-warm-400 uppercase tracking-[0.1em] pt-[18px] px-4 pb-1.5">
+          <div className="text-[10.5px] font-bold text-text-faint uppercase tracking-[0.1em] pt-[18px] px-4 pb-1.5">
             Files
           </div>
         ) : null}
@@ -142,10 +142,10 @@ export function Sidebar({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.15 }}
-                className={`group flex items-center gap-2 mx-2 my-px rounded-md px-2.5 py-1.5 hover:bg-black/[0.04] transition ${
+                className={`group flex items-center gap-2 mx-2 my-px rounded-[var(--radius)] px-2.5 py-1.5 hover:bg-hover transition ${
                   isSelected
-                    ? "text-accent-500 bg-accent-500/10"
-                    : "text-warm-600 hover:text-warm-900"
+                    ? "text-accent bg-accent-bg"
+                    : "text-text-muted hover:text-text"
                 }`}
               >
                 <div
@@ -166,10 +166,10 @@ export function Sidebar({
                     e.stopPropagation();
                     onTogglePin(file);
                   }}
-                  className={`cursor-pointer p-1 rounded transition flex-shrink-0 ${
+                  className={`cursor-pointer p-1 rounded-[var(--radius)] transition flex-shrink-0 ${
                     isPinned
-                      ? "opacity-100 text-accent-500 hover:bg-accent-50"
-                      : "opacity-0 group-hover:opacity-100 text-warm-400 hover:text-accent-500 hover:bg-accent-50"
+                      ? "opacity-100 text-accent hover:bg-accent-bg"
+                      : "opacity-0 group-hover:opacity-100 text-text-faint hover:text-accent hover:bg-accent-bg"
                   }`}
                   title={isPinned ? "Unpin" : "Pin to top"}
                   aria-label={isPinned ? "Unpin" : "Pin to top"}
@@ -182,7 +182,7 @@ export function Sidebar({
                     e.stopPropagation();
                     onDeleteEntry(file);
                   }}
-                  className="cursor-pointer opacity-0 group-hover:opacity-100 p-1 rounded text-warm-400 hover:text-red-400 hover:bg-red-50 transition flex-shrink-0"
+                  className="cursor-pointer opacity-0 group-hover:opacity-100 p-1 rounded-[var(--radius)] text-text-faint hover:text-red-400 hover:bg-red-50 transition flex-shrink-0"
                   title={
                     file.is_dir ? "Move folder to trash" : "Move note to trash"
                   }
@@ -200,7 +200,7 @@ export function Sidebar({
             type="button"
             onClick={onAddNote}
             disabled={!currentPath}
-            className="flex items-center gap-2 w-full px-2.5 py-[7px] rounded-md text-[13px] text-warm-500 hover:bg-black/[0.04] transition text-left disabled:opacity-30 disabled:pointer-events-none"
+            className="flex items-center gap-2 w-full px-2.5 py-[7px] rounded-[var(--radius)] text-[13px] text-text-muted hover:bg-hover transition text-left disabled:opacity-30 disabled:pointer-events-none"
           >
             <PlusIcon />
             <span>New note</span>
@@ -209,7 +209,7 @@ export function Sidebar({
             type="button"
             onClick={onAddFolder}
             disabled={!currentPath}
-            className="flex items-center gap-2 w-full px-2.5 py-[7px] rounded-md text-[13px] text-warm-500 hover:bg-black/[0.04] transition text-left disabled:opacity-30 disabled:pointer-events-none"
+            className="flex items-center gap-2 w-full px-2.5 py-[7px] rounded-[var(--radius)] text-[13px] text-text-muted hover:bg-hover transition text-left disabled:opacity-30 disabled:pointer-events-none"
           >
             <FolderPlusIcon />
             <span>New folder</span>

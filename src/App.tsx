@@ -5,9 +5,11 @@ import { Sidebar } from "./components/Sidebar";
 import { TopBar } from "./components/TopBar";
 import { useFileSystem } from "./hooks/useFileSystem";
 import { usePinnedEntries } from "./hooks/usePinnedEntries";
+import { useTheme } from "./hooks/useTheme";
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { theme, setTheme } = useTheme();
 
   const fs = useFileSystem();
   const pins = usePinnedEntries();
@@ -48,7 +50,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className="h-screen w-screen bg-warm-50 flex flex-col">
+    <div className="h-screen w-screen bg-bg flex flex-col">
       <EntryNamePromptModal
         key={fs.promptMode ?? "closed"}
         mode={fs.promptMode}
@@ -57,7 +59,12 @@ export default function App() {
         onConfirm={fs.handlePromptConfirm}
         onCancel={fs.handlePromptCancel}
       />
-      <TopBar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      <TopBar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        theme={theme}
+        setTheme={setTheme}
+      />
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
@@ -79,7 +86,7 @@ export default function App() {
           onNavigateToPinned={fs.navigateToPinned}
         />
 
-        <div className="flex-1 bg-warm-50 min-h-0 flex flex-col overflow-hidden">
+        <div className="flex-1 bg-bg min-h-0 flex flex-col overflow-hidden">
           {fs.selectedNote ? (
             <NoteEditor
               key={`${fs.selectedNote.base}/${fs.selectedNote.name}`}

@@ -28,17 +28,17 @@ export function EntryNamePromptModal({ mode, defaultName, error, onConfirm, onCa
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm"
       onClick={onCancel}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-lg shadow-xl p-6 w-[320px]"
+        className="bg-bg rounded-[var(--radius)] shadow-2xl border border-border p-6 w-[360px]"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-sm font-medium text-neutral-900 mb-3">{title}</h3>
-        <label className="block text-xs text-neutral-500 mb-1">{label}</label>
+        <h3 className="text-sm font-medium text-text mb-3">{title}</h3>
+        <label className="block text-xs text-text-muted mb-1">{label}</label>
         <input
           ref={inputRef}
           type="text"
@@ -48,7 +48,7 @@ export function EntryNamePromptModal({ mode, defaultName, error, onConfirm, onCa
             if (e.key === "Enter") onConfirm(value.trim());
             if (e.key === "Escape") onCancel();
           }}
-          className="w-full px-3 py-2 border border-neutral-200 rounded text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300"
+          className="w-full px-3 py-2 border border-border rounded-[var(--radius)] bg-sidebar text-text placeholder:text-text-faint focus:outline-none focus:border-text-muted"
           placeholder={mode === "note" ? "e.g. my-note" : "e.g. My Folder"}
         />
         {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
@@ -56,14 +56,14 @@ export function EntryNamePromptModal({ mode, defaultName, error, onConfirm, onCa
           <button
             type="button"
             onClick={onCancel}
-            className="px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 rounded"
+            className="px-3 py-1.5 text-sm text-text-muted hover:bg-hover rounded-[var(--radius)] transition"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={() => onConfirm(value.trim())}
-            className="px-3 py-1.5 text-sm bg-neutral-900 text-white rounded hover:bg-neutral-800"
+            className="px-3 py-1.5 text-sm bg-accent text-bg rounded-[var(--radius)] hover:brightness-90 transition"
           >
             Create
           </button>
