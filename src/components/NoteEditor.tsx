@@ -11,6 +11,8 @@ type Props = {
   note: SelectedNote;
   onError: (message: string) => void;
   onRename: (newName: string) => void;
+  previewMode: boolean;
+  setPreviewMode: (v: boolean) => void;
 };
 
 const FORMAT_BUTTONS = [
@@ -40,14 +42,13 @@ const FORMAT_BUTTONS = [
   },
 ] as const;
 
-export function NoteEditor({ note, onError, onRename }: Props) {
+export function NoteEditor({ note, onError, onRename, previewMode, setPreviewMode }: Props) {
   const [content, setContent] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [readOk, setReadOk] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
     "idle",
   );
-  const [previewMode, setPreviewMode] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -207,7 +208,7 @@ export function NoteEditor({ note, onError, onRename }: Props) {
         </span>
         <button
           type="button"
-          onClick={() => setPreviewMode((v) => !v)}
+          onClick={() => setPreviewMode(!previewMode)}
           title={previewMode ? "Edit" : "Preview"}
           aria-label={
             previewMode ? "Switch to edit mode" : "Switch to preview mode"
