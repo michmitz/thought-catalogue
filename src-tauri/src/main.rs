@@ -2,8 +2,44 @@
 
 use std::fs;
 use std::path::PathBuf;
+use std::time::UNIX_EPOCH;
 use serde::{Serialize, Deserialize};
 use tauri::Manager;
+
+fn is_leap_year(y: u32) -> bool {
+    (y % 4 == 0 && y % 100 != 0) || y % 400 == 0
+}
+
+fn unix_secs_to_iso(secs: u64) -> String {
+    let sec = secs % 60;
+    let min = (secs / 60) % 60;
+    let hour = (secs / 3600) % 24;
+    let mut days = secs / 86400;
+
+    let mut year = 1970u32;
+    loop {
+        let diy: u64 = if is_leap_year(year) { 366 } else { 365 };
+        if days < diy { break; }
+        days -= diy;
+        year += 1;
+    }
+
+    let months: [u64; 12] = if is_leap_year(year) {
+        [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    } else {
+        [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    };
+
+    let mut month = 1u32;
+    for &dim in &months {
+        if days < dim { break; }
+        days -= dim;
+        month += 1;
+    }
+    let day = days + 1;
+
+    format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z", year, month, day, hour, min, sec)
+}
 
 #[derive(Serialize, Deserialize, Clone)]
 struct PinnedEntry {
@@ -110,6 +146,7 @@ fn set_pinned(app: tauri::AppHandle, pinned: Vec<PinnedEntry>) -> Result<(), Str
 struct Entry {
     name: String,
     is_dir: bool,
+    created: Option<String>,
 }
 
 #[tauri::command]
@@ -134,9 +171,14 @@ fn read_folder(base: String, child: Option<String>) -> Result<Vec<Entry>, String
             continue;
         }
 
+        let created = metadata.created().ok()
+            .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+            .map(|d| unix_secs_to_iso(d.as_secs()));
+
         items.push(Entry {
             name,
             is_dir: metadata.is_dir(),
+            created,
         });
     }
 
@@ -242,6 +284,8 @@ fn main() {
             write_note,
             rename_note,
             move_to_trash,
+            get_theme,
+            set_theme,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
