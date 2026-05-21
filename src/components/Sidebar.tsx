@@ -137,11 +137,8 @@ export function Sidebar({
               currentPath === selectedNote.base &&
               selectedNote.name === file.name;
             return (
-              <motion.div
+              <div
                 key={file.name}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.15 }}
                 className={`group flex items-center gap-2 mx-2 my-px rounded-[var(--radius)] px-2.5 py-1.5 hover:bg-hover transition ${
                   isSelected
                     ? "text-accent bg-accent-bg"
@@ -190,7 +187,7 @@ export function Sidebar({
                 >
                   <TrashIcon />
                 </button>
-              </motion.div>
+              </div>
             );
           })}
         </div>
