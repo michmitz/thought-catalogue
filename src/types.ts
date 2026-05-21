@@ -1,7 +1,10 @@
 export type Entry = {
   name: string;
   is_dir: boolean;
+  created: string | null;
 };
+
+export type BrowseView = 'icons' | 'list' | 'date' | null;
 
 export type PinnedEntry = {
   path: string;

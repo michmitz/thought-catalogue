@@ -1,18 +1,27 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { THEMES, type ThemeKey } from "../hooks/useTheme";
-import { CheckIcon, GearIcon, SidebarIcon } from "./icons";
+import type { BrowseView } from "../types";
+import { CalendarIcon, CheckIcon, GearIcon, GridIcon, ListIcon, SidebarIcon } from "./icons";
 
 type Props = {
   sidebarOpen: boolean;
   setSidebarOpen: (value: boolean) => void;
   theme: ThemeKey;
   setTheme: (t: ThemeKey) => void;
+  browseView: BrowseView;
+  setView: (v: BrowseView) => void;
 };
 
 const win = getCurrentWindow();
 
-export function TopBar({ sidebarOpen, setSidebarOpen, theme, setTheme }: Props) {
+const BROWSE_BUTTONS: { v: NonNullable<BrowseView>; icon: React.ReactElement; title: string }[] = [
+  { v: 'icons', icon: <GridIcon />,     title: 'Icon view' },
+  { v: 'list',  icon: <ListIcon />,     title: 'List view' },
+  { v: 'date',  icon: <CalendarIcon />, title: 'By date created' },
+];
+
+export function TopBar({ sidebarOpen, setSidebarOpen, theme, setTheme, browseView, setView }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -86,6 +95,24 @@ export function TopBar({ sidebarOpen, setSidebarOpen, theme, setTheme }: Props) 
       </span>
 
       <div className="ml-auto flex items-center gap-1 relative z-10" ref={menuRef}>
+        <div className="flex bg-hover rounded-[var(--radius)] p-0.5 mr-1">
+          {BROWSE_BUTTONS.map(({ v, icon, title }) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setView(v)}
+              title={title}
+              aria-pressed={browseView === v}
+              className={`px-2 py-1 rounded-[var(--radius)] transition cursor-default ${
+                browseView === v
+                  ? 'bg-bg opacity-90'
+                  : 'opacity-40 hover:opacity-70'
+              }`}
+            >
+              {icon}
+            </button>
+          ))}
+        </div>
         <button
           type="button"
           onClick={() => setMenuOpen((v) => !v)}
@@ -96,16 +123,18 @@ export function TopBar({ sidebarOpen, setSidebarOpen, theme, setTheme }: Props) 
         >
           <GearIcon />
         </button>
-        <button
-          type="button"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-          aria-pressed={sidebarOpen}
-          title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-          className="p-1.5 rounded-[var(--radius)] text-text opacity-40 hover:opacity-70 hover:bg-hover transition cursor-default focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-muted/60"
-        >
-          <SidebarIcon />
-        </button>
+        {!browseView && (
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+            aria-pressed={sidebarOpen}
+            title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+            className="p-1.5 rounded-[var(--radius)] text-text opacity-40 hover:opacity-70 hover:bg-hover transition cursor-default focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text-muted/60"
+          >
+            <SidebarIcon />
+          </button>
+        )}
 
         {menuOpen && (
           <div className="absolute right-0 top-9 w-[280px] p-2 rounded-[10px] bg-bg border border-border shadow-xl z-50">
