@@ -187,6 +187,7 @@ export function useFileSystem() {
     files,
     pathStack,
     currentPath,
+    rootPath: pathStack.length > 0 ? pathStack[0] : null,
     canGoBack,
     promptMode,
     promptError,
@@ -202,5 +203,6 @@ export function useFileSystem() {
     handlePromptCancel,
     handleDeleteEntry,
     renameNote,
+    refreshFiles,
   };
 }

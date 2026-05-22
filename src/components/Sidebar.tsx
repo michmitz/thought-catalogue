@@ -1,7 +1,9 @@
 import { motion } from "framer-motion";
+import React, { useRef, useState } from "react";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
+  FileIcon,
   FolderIcon,
   FolderPlusIcon,
   NoteIcon,
@@ -9,7 +11,14 @@ import {
   StarIcon,
   TrashIcon,
 } from "./icons";
+import { DropOverlay } from "./DropOverlay";
 import type { Entry, PinnedEntry, SelectedNote } from "../types";
+
+function entryIcon(name: string, isDir: boolean, size?: number) {
+  if (isDir) return <FolderIcon size={size} />;
+  if (name.endsWith(".md")) return <NoteIcon size={size} />;
+  return <FileIcon size={size} />;
+}
 
 type Props = {
   open: boolean;
@@ -28,6 +37,7 @@ type Props = {
   onTogglePin: (entry: Entry) => void;
   onUnpinPath: (fullPath: string) => void;
   onNavigateToPinned: (entry: PinnedEntry) => void;
+  showDropOverlay?: boolean;
 };
 
 export function Sidebar({
@@ -47,10 +57,33 @@ export function Sidebar({
   onTogglePin,
   onUnpinPath,
   onNavigateToPinned,
+  showDropOverlay = false,
 }: Props) {
   const pinnedList = [...pinnedEntries].sort((a, b) =>
     a.path.localeCompare(b.path),
   );
+
+  const dragCounterRef = useRef(0);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  function onDragEnter(e: React.DragEvent<HTMLDivElement>) {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    dragCounterRef.current++;
+    if (dragCounterRef.current === 1) setIsDragOver(true);
+  }
+  function onDragOver(e: React.DragEvent<HTMLDivElement>) {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+  }
+  function onDragLeave() {
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) setIsDragOver(false);
+  }
+  function onDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setIsDragOver(false);
+  }
 
   return (
     <motion.div
@@ -59,9 +92,14 @@ export function Sidebar({
       className="overflow-hidden border-r border-border bg-sidebar flex-shrink-0"
     >
       <div
-        className="flex flex-col h-full overflow-hidden"
+        className="flex flex-col h-full overflow-hidden relative"
         style={{ width: 260 }}
+        onDragEnter={onDragEnter}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
       >
+        {(isDragOver || showDropOverlay) && <DropOverlay />}
         {pinnedList.length > 0 && (
           <>
             <div className="text-[10.5px] font-bold text-text-faint uppercase tracking-[0.1em] pt-[18px] px-4 pb-1.5">
@@ -89,7 +127,7 @@ export function Sidebar({
                       onClick={() => onNavigateToPinned(pin)}
                       className="flex-1 flex items-center gap-2 min-w-0 cursor-pointer"
                     >
-                      {pin.is_dir ? <FolderIcon /> : <NoteIcon />}
+                      {entryIcon(pin.path.split("/").pop() ?? "", pin.is_dir)}
                       <span className="truncate text-[13.5px]">{name}</span>
                     </div>
                     <button
@@ -151,7 +189,7 @@ export function Sidebar({
                   }
                   className="flex-1 flex items-center gap-2 min-w-0 cursor-pointer"
                 >
-                  {file.is_dir ? <FolderIcon /> : <NoteIcon />}
+                  {entryIcon(file.name, file.is_dir)}
                   <span className="truncate text-[13.5px]">
                     {file.name.replace(/\.md$/, "")}
                   </span>
