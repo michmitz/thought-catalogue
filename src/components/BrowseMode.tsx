@@ -1,5 +1,13 @@
+import React, { useRef, useState } from "react";
 import type { BrowseView, Entry } from "../types";
-import { ChevronLeftIcon, FolderIcon, NoteIcon, StarIcon } from "./icons";
+import { ChevronLeftIcon, FileIcon, FolderIcon, NoteIcon, StarIcon } from "./icons";
+import { DropOverlay } from "./DropOverlay";
+
+function entryIcon(name: string, isDir: boolean, size?: number) {
+  if (isDir) return <FolderIcon size={size} />;
+  if (name.endsWith(".md")) return <NoteIcon size={size} />;
+  return <FileIcon size={size} />;
+}
 
 type Props = {
   view: NonNullable<BrowseView>;
@@ -12,6 +20,7 @@ type Props = {
   onExit: () => void;
   pinnedPaths: Set<string>;
   onPin: (entry: Entry) => void;
+  showDropOverlay?: boolean;
 };
 
 function formatDate(created: string | null): string {
@@ -52,14 +61,44 @@ export function BrowseMode({
   onExit,
   pinnedPaths,
   onPin,
+  showDropOverlay = false,
 }: Props) {
   function isPinned(item: Entry): boolean {
     if (!currentPath) return false;
     return pinnedPaths.has(`${currentPath}/${item.name}`);
   }
 
+  const dragCounterRef = useRef(0);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  function onDragEnter(e: React.DragEvent<HTMLDivElement>) {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    dragCounterRef.current++;
+    if (dragCounterRef.current === 1) setIsDragOver(true);
+  }
+  function onDragOver(e: React.DragEvent<HTMLDivElement>) {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+  }
+  function onDragLeave() {
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) setIsDragOver(false);
+  }
+  function onDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setIsDragOver(false);
+  }
+
   return (
-    <div className="flex flex-col flex-1 min-h-0 bg-bg overflow-hidden">
+    <div
+      className="flex flex-col flex-1 min-h-0 bg-bg overflow-hidden relative"
+      onDragEnter={onDragEnter}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
+      {(isDragOver || showDropOverlay) && <DropOverlay />}
       <div className="h-11 flex items-center px-6 gap-3 border-b border-border flex-shrink-0">
         {canGoBack && (
           <button
@@ -129,8 +168,10 @@ function IconsView({
           <div className="w-16 h-16 flex items-center justify-center text-text-muted relative">
             {item.is_dir ? (
               <FolderIcon size={52} />
-            ) : (
+            ) : item.name.endsWith(".md") ? (
               <NoteIcon size={44} strokeWidth={1.1} />
+            ) : (
+              <FileIcon size={44} strokeWidth={1.1} />
             )}
             {isPinned(item) && (
               <div className="absolute top-0 right-1 text-accent">
@@ -176,11 +217,7 @@ function ListView({
           style={{ gridTemplateColumns: "1fr 140px 32px" }}
         >
           <span className="flex items-center gap-2.5 min-w-0">
-            {item.is_dir ? (
-              <FolderIcon size={14} className="text-text-muted" />
-            ) : (
-              <NoteIcon size={14} className="text-text-muted" />
-            )}
+            <span className="text-text-muted">{entryIcon(item.name, item.is_dir, 14)}</span>
             <span className="truncate">{item.name.replace(/\.md$/, "")}</span>
           </span>
           <span className="text-text-muted text-[12px]">
@@ -243,11 +280,7 @@ function DateView({
               onClick={() => onOpen(item)}
               className="px-6 py-2.5 flex items-center gap-3 cursor-default hover:bg-hover text-[13.5px] border-b border-border"
             >
-              {item.is_dir ? (
-                <FolderIcon size={14} className="text-text-muted" />
-              ) : (
-                <NoteIcon size={14} className="text-text-muted" />
-              )}
+              <span className="text-text-muted">{entryIcon(item.name, item.is_dir, 14)}</span>
               <span className="flex-1 truncate">
                 {item.name.replace(/\.md$/, "")}
               </span>

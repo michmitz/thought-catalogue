@@ -254,6 +254,58 @@ fn move_to_trash(base: String, name: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn open_file(path: String) -> Result<(), String> {
+    std::process::Command::new("open")
+        .arg(&path)
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn reveal_in_finder(path: String) -> Result<(), String> {
+    std::process::Command::new("open")
+        .args(["-R", &path])
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn copy_to_workspace(src: String, dest_dir: String, replace: bool) -> Result<String, String> {
+    let src_path = PathBuf::from(&src);
+    let basename = src_path.file_name()
+        .ok_or_else(|| "Invalid source path".to_string())?;
+    let dest_path = PathBuf::from(&dest_dir).join(basename);
+    if dest_path.exists() && !replace {
+        return Err("exists".into());
+    }
+    fs::copy(&src_path, &dest_path).map_err(|e| e.to_string())?;
+    Ok(dest_path.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
+fn copy_to_workspace_unique(src: String, dest_dir: String) -> Result<String, String> {
+    let src_path = PathBuf::from(&src);
+    let file_stem = src_path.file_stem()
+        .ok_or_else(|| "Invalid source path".to_string())?
+        .to_string_lossy()
+        .into_owned();
+    let ext = src_path.extension()
+        .map(|e| format!(".{}", e.to_string_lossy()))
+        .unwrap_or_default();
+    let dest_dir_path = PathBuf::from(&dest_dir);
+    let mut target = dest_dir_path.join(format!("{}{}", file_stem, ext));
+    let mut counter = 2u32;
+    while target.exists() {
+        target = dest_dir_path.join(format!("{} {}{}", file_stem, counter, ext));
+        counter += 1;
+    }
+    fs::copy(&src_path, &target).map_err(|e| e.to_string())?;
+    Ok(target.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
 fn get_theme(app: tauri::AppHandle) -> Option<String> {
     read_config(&app).theme
 }
@@ -286,6 +338,10 @@ fn main() {
             move_to_trash,
             get_theme,
             set_theme,
+            copy_to_workspace,
+            copy_to_workspace_unique,
+            open_file,
+            reveal_in_finder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
